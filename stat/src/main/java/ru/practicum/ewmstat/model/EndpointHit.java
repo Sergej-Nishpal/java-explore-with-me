@@ -1,7 +1,6 @@
 package ru.practicum.ewmstat.model;
 
 import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -30,6 +29,5 @@ public class EndpointHit {
     private String ip;
 
     @Column(name = "timestamp", nullable = false)
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime timestamp;
 }

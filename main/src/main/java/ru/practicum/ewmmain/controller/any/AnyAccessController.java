@@ -1,4 +1,74 @@
 package ru.practicum.ewmmain.controller.any;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.ewmmain.dto.EventFullDto;
+import ru.practicum.ewmmain.dto.EventShortDto;
+import ru.practicum.ewmmain.service.AnyAccessService;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Positive;
+import javax.validation.constraints.PositiveOrZero;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.Set;
+
+@Slf4j
+@Validated
+@RestController
+@RequiredArgsConstructor
 public class AnyAccessController {
+    private static final String APP = "Explore With Me Main";
+
+    private final AnyAccessService anyAccessService;
+
+    @GetMapping("/events")
+    public Collection<EventShortDto> getEvents(@RequestParam String text,
+                                               @RequestParam Set<Integer> categories,
+                                               @RequestParam Boolean paid,
+                                               @RequestParam (required = false)
+                                                   @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                                   LocalDateTime rangeStart,
+                                               @RequestParam (required = false)
+                                                   @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                                   LocalDateTime rangeEnd,
+                                               @RequestParam(defaultValue = "false") Boolean onlyAvailable,
+                                               @RequestParam String sort,
+                                               @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                               @RequestParam(defaultValue = "10") @Positive Integer size,
+                                               HttpServletRequest request) {
+
+        final String ip = request.getRemoteAddr();
+        final String path = request.getRequestURI();
+
+        log.debug("Запрос информации о событиях с ip: {}.", ip);
+
+        final EventsRequestParameters requestParameters = EventsRequestParameters.builder()
+                .text(text)
+                .categories(categories)
+                .paid(paid)
+                .rangeStart(rangeStart)
+                .rangeEnd(rangeEnd)
+                .onlyAvailable(onlyAvailable)
+                .sort(sort.equals(EventSortType.EVENT_DATE.name()) ? EventSortType.EVENT_DATE : EventSortType.VIEWS)
+                .from(from)
+                .size(size)
+                .build();
+
+        return anyAccessService.getEvents(requestParameters, ip, path, APP);
+    }
+
+    @GetMapping("/events/{eventId}")
+    public EventFullDto getEventById(@PathVariable("eventId") @Positive Long eventId, HttpServletRequest request) {
+        final String ip = request.getRemoteAddr();
+        final String path = request.getRequestURI();
+        log.debug("Получение информации о событии с id = {}, запрос с ip: {}.", eventId, ip);
+        return anyAccessService.getEventById(eventId, ip, path, APP);
+    }
 }

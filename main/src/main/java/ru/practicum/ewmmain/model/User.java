@@ -23,16 +23,4 @@ public class User {
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
-
-    @Override
-    public boolean equals(Object user) {
-        if (this == user) return true;
-        if (!(user instanceof User)) return false;
-        return id != null && id.equals(((User) user).getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }

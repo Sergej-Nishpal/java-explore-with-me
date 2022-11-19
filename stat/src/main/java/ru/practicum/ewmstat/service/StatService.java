@@ -1,4 +1,7 @@
 package ru.practicum.ewmstat.service;
 
-public class StatService {
+import ru.practicum.ewmstat.model.EndpointHit;
+
+public interface StatService {
+    void postHit(EndpointHit endpointHit);
 }
