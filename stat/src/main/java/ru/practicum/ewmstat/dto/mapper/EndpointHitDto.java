@@ -4,15 +4,11 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Value
 @Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
 public class EndpointHitDto {
-    private String app;
-    private String uri;
-    private String ip;
-    private LocalDateTime timestamp;
+    String app;
+    String uri;
+    String ip;
+    LocalDateTime timestamp;
 }

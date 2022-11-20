@@ -1,41 +1,29 @@
 package ru.practicum.ewmmain.dto;
 
-import lombok.*;
-import org.springframework.format.annotation.DateTimeFormat;
+import lombok.Builder;
+import lombok.Value;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.model.Location;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Value
 @Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(of = "id")
 public class EventFullDto {
-    private Long id;
-    private String annotation;
-    private CategoryDto category;
-    private Long confirmedRequests;
-
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdOn;
-
-    private String description;
-
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime eventDate;
-    private UserShortDto initiator;
-    private Location location;
-    private Boolean paid;
-    private Integer participantLimit;
-
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime publishedOn;
-    private Boolean requestModeration;
-    private EventState state;
-    private String title;
-    private Long views;
+    Long id;
+    String annotation;
+    CategoryDto category;
+    Long confirmedRequests;
+    LocalDateTime createdOn;
+    String description;
+    LocalDateTime eventDate;
+    UserShortDto initiator;
+    Location location;
+    Boolean paid;
+    Integer participantLimit;
+    LocalDateTime publishedOn;
+    Boolean requestModeration;
+    EventState state;
+    String title;
+    Long views;
 }
