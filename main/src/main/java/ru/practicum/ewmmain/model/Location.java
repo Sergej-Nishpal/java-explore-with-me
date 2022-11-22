@@ -19,8 +19,8 @@ public class Location {
     private Long id;
 
     @Column(name = "latitude")
-    private float latitude;
+    private float lat;
 
     @Column(name = "longitude")
-    private float longitude;
+    private float lon;
 }

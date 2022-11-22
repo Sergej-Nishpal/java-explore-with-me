@@ -8,9 +8,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ru.practicum.ewmmain.dto.CategoryDto;
+import ru.practicum.ewmmain.dto.CompilationDto;
 import ru.practicum.ewmmain.dto.EventFullDto;
 import ru.practicum.ewmmain.dto.EventShortDto;
-import ru.practicum.ewmmain.service.AnyAccessService;
+import ru.practicum.ewmmain.service.any.AnyAccessService;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Positive;
@@ -51,7 +53,7 @@ public class AnyAccessController {
 
         final EventsRequestParameters requestParameters = EventsRequestParameters.builder()
                 .text(text)
-                .categories(categories)
+                .categoryIds(categories)
                 .paid(paid)
                 .rangeStart(rangeStart)
                 .rangeEnd(rangeEnd)
@@ -65,10 +67,37 @@ public class AnyAccessController {
     }
 
     @GetMapping("/events/{eventId}")
-    public EventFullDto getEventById(@PathVariable("eventId") @Positive Long eventId, HttpServletRequest request) {
+    public EventFullDto getEventById(@PathVariable @Positive Long eventId, HttpServletRequest request) {
         final String ip = request.getRemoteAddr();
         final String path = request.getRequestURI();
         log.debug("Получение информации о событии с id = {}, запрос с ip: {}.", eventId, ip);
         return anyAccessService.getEventById(eventId, ip, path, APP);
+    }
+
+    @GetMapping("/compilations")
+    public Collection<CompilationDto> getCompilations(@RequestParam Boolean pinned,
+                                                      @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                                      @RequestParam(defaultValue = "10") @Positive Integer size) {
+        log.debug("Получение подборок событий.");
+        return anyAccessService.getCompilations(pinned, from, size);
+    }
+
+    @GetMapping("/compilations/{compId}")
+    public CompilationDto getCompilationById(@PathVariable @Positive Long compId) {
+        log.debug("Получение информации о подборке событий с id = {}.", compId);
+        return anyAccessService.getCompilationById(compId);
+    }
+
+    @GetMapping("/categories")
+    public Collection<CategoryDto> getCategories(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                                 @RequestParam(defaultValue = "10") @Positive Integer size) {
+        log.debug("Получение списка категорий.");
+        return anyAccessService.getCategories(from, size);
+    }
+
+    @GetMapping("/categories/{catId}")
+    public CategoryDto getCategoryById(@PathVariable("catId") @Positive Long catId) {
+        log.debug("Получение категории с id = {}.", catId);
+        return anyAccessService.getCategoryById(catId);
     }
 }

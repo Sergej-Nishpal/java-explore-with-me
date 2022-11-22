@@ -8,6 +8,6 @@ import java.util.Collection;
 
 public interface EventRepository extends JpaRepository<Event, Long> {
 
-    @Query
-    Collection<Event> findAllWithParameters();
+    //@Query
+    //Collection<Event> findAllWithParameters();
 }
