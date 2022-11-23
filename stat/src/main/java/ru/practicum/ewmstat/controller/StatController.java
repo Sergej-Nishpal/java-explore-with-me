@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
-import ru.practicum.ewmstat.dto.mapper.EndpointHitDto;
+import ru.practicum.ewmstat.dto.EndpointHitDto;
 import ru.practicum.ewmstat.dto.mapper.EndpointHitMapper;
 import ru.practicum.ewmstat.service.StatService;
 

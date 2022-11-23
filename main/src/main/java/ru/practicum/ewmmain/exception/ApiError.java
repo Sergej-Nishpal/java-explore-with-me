@@ -1,20 +1,20 @@
 package ru.practicum.ewmmain.exception;
 
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 
-@Getter
-@Setter
+@Value
 @Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
+@Jacksonized
 public class ApiError {
-    private Collection<Exception> errors;
-    private String message;
-    private String reason;
-    private String status;
-    private LocalDateTime timestamp;
+    StackTraceElement[] errors;
+    String message;
+    String reason;
+    String status;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    LocalDateTime timestamp;
 }

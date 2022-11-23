@@ -3,6 +3,7 @@ package ru.practicum.ewmstat.dto.mapper;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
+import ru.practicum.ewmstat.dto.EndpointHitDto;
 import ru.practicum.ewmstat.model.EndpointHit;
 
 @Component

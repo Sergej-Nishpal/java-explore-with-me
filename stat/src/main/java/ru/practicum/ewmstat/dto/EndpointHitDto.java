@@ -1,4 +1,4 @@
-package ru.practicum.ewmstat.dto.mapper;
+package ru.practicum.ewmstat.dto;
 
 import lombok.*;
 
