@@ -9,9 +9,9 @@ import java.util.Set;
 @Value
 @Builder
 public class NewCompilationDto {
-    Set<Long> events;
-    Boolean pinned;
 
     @NotBlank
     String title;
+    Set<Long> events;
+    Boolean pinned;
 }
