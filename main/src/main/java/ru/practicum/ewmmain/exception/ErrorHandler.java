@@ -3,6 +3,7 @@ package ru.practicum.ewmmain.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,7 +15,8 @@ import java.time.LocalDateTime;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler(ConstraintViolationException.class) //TODO
+    @ExceptionHandler({ConstraintViolationException.class, NullPointerException.class,
+            HttpMessageNotReadableException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handle400Error(final RuntimeException e) {
         log.error("400 - Ошибка валидации: {} ", e.getMessage(), e);
@@ -27,7 +29,7 @@ public class ErrorHandler {
                 .build();
     }
 
-    @ExceptionHandler() //TODO
+    /*@ExceptionHandler() //TODO
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ApiError handle403Error(final RuntimeException e) {
         log.error("403 - Действие запрещено: {} ", e.getMessage(), e);
@@ -38,9 +40,9 @@ public class ErrorHandler {
                 .status(HttpStatus.FORBIDDEN.name())
                 .timestamp(LocalDateTime.now())
                 .build();
-    }
+    }*/
 
-    @ExceptionHandler() //TODO
+    /*@ExceptionHandler() //TODO
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handle404Error(final RuntimeException e) {
         log.error("404 - Объект не найден: {} ", e.getMessage(), e);
@@ -51,9 +53,9 @@ public class ErrorHandler {
                 .status(HttpStatus.NOT_FOUND.name())
                 .timestamp(LocalDateTime.now())
                 .build();
-    }
+    }*/
 
-    @ExceptionHandler({DataIntegrityViolationException.class})
+    /*@ExceptionHandler({DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handle409Error(final RuntimeException e) {
         log.error("409 - Конфликт данных: {} ", e.getMessage(), e);
@@ -64,7 +66,7 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .timestamp(LocalDateTime.now())
                 .build();
-    }
+    }*/
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)

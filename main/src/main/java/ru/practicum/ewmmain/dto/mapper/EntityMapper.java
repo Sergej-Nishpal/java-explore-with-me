@@ -31,6 +31,26 @@ public class EntityMapper {
                 .build();
     }
 
+    public static EventFullDto toEventFullDto(Event event) {
+        return EventFullDto.builder()
+                .id(event.getId())
+                .title(event.getTitle())
+                .annotation(event.getAnnotation())
+                .description(event.getDescription())
+                .category(toCategoryDto(event.getCategory()))
+                .paid(event.getPaid())
+                .participantLimit(event.getParticipantLimit())
+                .location(event.getLocation())
+                .eventDate(event.getEventDate())
+                .initiator(EntityMapper.toUserShortDto(event.getInitiator()))
+                .requestModeration(event.getRequestModeration())
+                .createdOn(event.getCreatedOn())
+                .state(event.getState())
+                .publishedOn(event.getPublishedOn()) // TODO ?
+                .confirmedRequests(event.getConfirmedRequests()) // TODO ?
+                .build();
+    }
+
     public static UserShortDto toUserShortDto(User user) {
         return UserShortDto.builder()
                 .id(user.getId())

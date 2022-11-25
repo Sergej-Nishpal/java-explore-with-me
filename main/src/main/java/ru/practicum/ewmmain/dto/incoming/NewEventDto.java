@@ -3,7 +3,6 @@ package ru.practicum.ewmmain.dto.incoming;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import org.hibernate.validator.constraints.Length;
 import org.springframework.format.annotation.DateTimeFormat;
 import ru.practicum.ewmmain.model.Location;
 

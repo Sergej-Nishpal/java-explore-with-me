@@ -11,19 +11,19 @@ import java.time.LocalDateTime;
 @Builder
 public class EventFullDto {
     Long id;
+    String title;
     String annotation;
-    CategoryDto category;
-    Long confirmedRequests;
-    LocalDateTime createdOn;
     String description;
-    LocalDateTime eventDate;
-    UserShortDto initiator;
-    Location location;
+    CategoryDto category;
     Boolean paid;
     Integer participantLimit;
-    LocalDateTime publishedOn;
+    Location location;
+    LocalDateTime eventDate;
+    UserShortDto initiator;
     Boolean requestModeration;
+    LocalDateTime createdOn;
     EventState state;
-    String title;
+    LocalDateTime publishedOn;
+    Long confirmedRequests;
     Long views;
 }

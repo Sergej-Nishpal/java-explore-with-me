@@ -7,15 +7,26 @@ import ru.practicum.ewmmain.dto.EventShortDto;
 import ru.practicum.ewmmain.dto.ParticipationRequestDto;
 import ru.practicum.ewmmain.dto.incoming.NewEventDto;
 import ru.practicum.ewmmain.dto.incoming.UpdateEventRequest;
+import ru.practicum.ewmmain.dto.mapper.EntityMapper;
+import ru.practicum.ewmmain.exception.CategoryNotFoundException;
+import ru.practicum.ewmmain.exception.UserNotFoundException;
+import ru.practicum.ewmmain.model.Event;
+import ru.practicum.ewmmain.model.EventState;
+import ru.practicum.ewmmain.repository.CategoryRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
+import ru.practicum.ewmmain.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
 public class AuthAccessServiceImpl implements AuthAccessService {
+    private final UserRepository userRepository;
     private final EventRepository eventRepository;
+    private final CategoryRepository categoryRepository;
+
     @Override
     public Collection<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size) {
         return Collections.emptyList();
@@ -28,7 +39,25 @@ public class AuthAccessServiceImpl implements AuthAccessService {
 
     @Override
     public EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto) {
-        return null;
+        final Event event = Event.builder()
+                .title(newEventDto.getTitle())
+                .annotation(newEventDto.getAnnotation())
+                .description(newEventDto.getDescription())
+                .category(categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
+                    throw new CategoryNotFoundException(newEventDto.getCategory());
+                }))
+                .paid(newEventDto.getPaid())
+                .participantLimit(newEventDto.getParticipantLimit())
+                .location(newEventDto.getLocation())
+                .eventDate(newEventDto.getEventDate())
+                .initiator(userRepository.findById(userId).orElseThrow(() -> {
+                    throw new UserNotFoundException(userId);
+                }))
+                .requestModeration(newEventDto.getRequestModeration())
+                .createdOn(LocalDateTime.now())
+                .state(EventState.PENDING)
+                .build();
+        return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 
     @Override

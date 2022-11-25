@@ -19,21 +19,28 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "title")
+    private String title;
+
     @Column(name = "annotation")
     private String annotation;
+
+    @Column(name = "description")
+    private String description;
 
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
 
-    @Column(name = "confirmed_requests")
-    private Long confirmedRequests;
+    @Column(name = "paid")
+    private Boolean paid;
 
-    @Column(name = "created_on")
-    private LocalDateTime createdOn;
+    @Column(name = "participant_limit")
+    private Integer participantLimit;
 
-    @Column(name = "description")
-    private String description;
+    @OneToOne
+    @JoinColumn(name = "location_id")
+    private Location location;
 
     @Column(name = "event_date")
     private LocalDateTime eventDate;
@@ -42,26 +49,19 @@ public class Event {
     @JoinColumn(name = "initiator_id")
     private User initiator;
 
-    @OneToOne
-    @JoinColumn(name = "location_id")
-    private Location location;
-
-    @Column(name = "paid")
-    private Boolean paid;
-
-    @Column(name = "participant_limit")
-    private Integer participantLimit;
-
-    @Column(name = "published_on")
-    private LocalDateTime publishedOn;
-
     @Column(name = "request_moderation")
     private Boolean requestModeration;
+
+    @Column(name = "created_on")
+    private LocalDateTime createdOn;
 
     @Column(name = "state")
     @Enumerated(EnumType.STRING)
     private EventState state;
 
-    @Column(name = "title")
-    private String title;
+    @Column(name = "published_on")
+    private LocalDateTime publishedOn;
+
+    @Column(name = "confirmed_requests")
+    private Long confirmedRequests;
 }
