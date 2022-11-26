@@ -4,13 +4,8 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewmmain.dto.*;
-import ru.practicum.ewmmain.dto.incoming.NewCategoryDto;
-import ru.practicum.ewmmain.dto.incoming.NewCompilationDto;
-import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
-import ru.practicum.ewmmain.model.Category;
-import ru.practicum.ewmmain.model.Compilation;
-import ru.practicum.ewmmain.model.Event;
-import ru.practicum.ewmmain.model.User;
+import ru.practicum.ewmmain.dto.incoming.*;
+import ru.practicum.ewmmain.model.*;
 
 import java.util.Set;
 
@@ -48,6 +43,11 @@ public class EntityMapper {
                 .state(event.getState())
                 .publishedOn(event.getPublishedOn()) // TODO ?
                 .confirmedRequests(event.getConfirmedRequests()) // TODO ?
+                .build();
+    }
+
+    public static Event toEvent(NewEventDto newEventDto) {
+        return Event.builder()
                 .build();
     }
 
@@ -99,6 +99,13 @@ public class EntityMapper {
                 .id(compilation.getId())
                 .title(compilation.getTitle())
                 .pinned(compilation.getPinned())
+                .build();
+    }
+
+    public static Location toLocation(LocationDto locationDto) {
+        return Location.builder()
+                .lat(locationDto.getLat())
+                .lon(locationDto.getLon())
                 .build();
     }
 }

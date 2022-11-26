@@ -12,8 +12,8 @@ import javax.validation.constraints.NotBlank;
 @Jacksonized
 public class NewUserRequest {
 
-    @NotBlank
     @Email
+    @NotBlank
     String email;
 
     @NotBlank

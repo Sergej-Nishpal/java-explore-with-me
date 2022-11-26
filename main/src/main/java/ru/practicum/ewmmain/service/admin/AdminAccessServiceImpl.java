@@ -55,7 +55,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         // событие должно быть в состоянии ожидания публикации
         Event event = getEventWithCheck(eventId);
         if (!event.getEventDate().minusHours(hoursBeforeForPublish).isAfter(LocalDateTime.now())) {
-            throw new IncorrectPublishTimeException(hoursBeforeForPublish);
+            throw new IncorrectEventDateException(hoursBeforeForPublish);
         }
 
         if (!event.getState().equals(EventState.PENDING)) {
@@ -64,15 +64,20 @@ public class AdminAccessServiceImpl implements AdminAccessService {
 
         event.setState(EventState.PUBLISHED);
         event.setPublishedOn(LocalDateTime.now());
-        //TODO Что тут дальше?
-        return null;
+        return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 
     @Override
     public EventFullDto rejectEvent(Long eventId) {
         //событие не должно быть опубликовано
+        Event event = getEventWithCheck(eventId);
 
-        return null;
+        if (!event.getState().equals(EventState.PUBLISHED)) {
+            throw new NotPendingStateException(event.getState().name());
+        }
+
+        event.setState(EventState.CANCELED);
+        return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 
     @Override

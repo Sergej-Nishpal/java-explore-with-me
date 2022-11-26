@@ -38,7 +38,7 @@ public class Event {
     @Column(name = "participant_limit")
     private Integer participantLimit;
 
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "location_id")
     private Location location;
 

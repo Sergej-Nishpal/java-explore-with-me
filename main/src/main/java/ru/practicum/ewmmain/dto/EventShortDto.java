@@ -1,5 +1,6 @@
 package ru.practicum.ewmmain.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -8,12 +9,14 @@ import java.time.LocalDateTime;
 @Builder
 public class EventShortDto {
     Long id;
+    String title;
     String annotation;
     CategoryDto category;
-    Long confirmedRequests;
-    LocalDateTime eventDate;
-    UserShortDto initiator;
     Boolean paid;
-    String title;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
+    LocalDateTime eventDate;
+    Long confirmedRequests;
+    UserShortDto initiator;
     Long views;
 }
