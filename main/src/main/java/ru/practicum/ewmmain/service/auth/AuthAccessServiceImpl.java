@@ -167,7 +167,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                 .requesterId(userId)
                 .eventId(eventId)
                 .created(LocalDateTime.now())
-                .status(Boolean.FALSE.equals(event.getRequestModeration())
+                .status((Boolean.FALSE.equals(event.getRequestModeration()) || event.getParticipantLimit() == 0)
                         ? ParticipationRequestStatus.CONFIRMED
                         : ParticipationRequestStatus.PENDING)
                 .build();
@@ -178,7 +178,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     @Transactional
     public ParticipationRequestDto cancelParticipationRequestId(Long userId, Long requestId) {
         final ParticipationRequest participationRequest = requestRepository.findById(requestId).orElseThrow(() -> {
-            throw new ParticipationRequestException(String.format("Запрос с id = %d не найден!", requestId));
+            throw new ParticipationRequestNotFoundException(requestId);
         });
 
         if (!participationRequest.getRequesterId().equals(userId)) {
@@ -191,6 +191,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
+    @Transactional
     public ParticipationRequestDto confirmParticipationRequestOfEventId(Long userId, Long eventId, Long reqId) {
         //если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется
         //нельзя подтвердить заявку, если уже достигнут лимит по заявкам на данное событие
@@ -204,30 +205,58 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                     "чужой запрос на чужое событие с id = %d!", userId, eventId));
         }
 
+        ParticipationRequest participationRequest = requestRepository.findById(reqId).orElseThrow(() -> {
+            throw new ParticipationRequestException(String.format("Запрос с id = %d не найден!", reqId));
+        });
+
+        if (Boolean.FALSE.equals(event.getRequestModeration()) || event.getParticipantLimit() == 0) {
+            return EntityMapper.toParticipationRequestDto(participationRequest);
+
+        } else {
+            // TODO Непонятно, что тут дальше? Что делать после "не требуется"?
+            if (event.getConfirmedRequests().intValue() == event.getParticipantLimit().intValue()) {
+                throw new ParticipationRequestException("На данное событие достигнут лимит по заявкам!");
+            }
+
+            participationRequest.setStatus(ParticipationRequestStatus.CONFIRMED);
+            participationRequest = requestRepository.save(participationRequest);
+            event.setConfirmedRequests(event.getConfirmedRequests() + 1);
+            eventRepository.save(event);
+
+            if (event.getConfirmedRequests().intValue() == event.getParticipantLimit().intValue()) {
+                final Collection<ParticipationRequest> pendingRequests = requestRepository
+                        .findAllByEventIdAndStatus(eventId, ParticipationRequestStatus.PENDING);
+                pendingRequests.forEach(request -> request.setStatus(ParticipationRequestStatus.REJECTED));
+                requestRepository.saveAll(pendingRequests);
+            }
+        }
+        return EntityMapper.toParticipationRequestDto(participationRequest);
+    }
+
+    @Override
+    @Transactional
+    public ParticipationRequestDto rejectParticipationRequestOfEventId(Long userId, Long eventId, Long reqId) {
         final ParticipationRequest participationRequest = requestRepository.findById(reqId).orElseThrow(() -> {
             throw new ParticipationRequestException(String.format("Запрос с id = %d не найден!", reqId));
         });
 
-        if (event.getParticipantLimit() == 0 || Boolean.TRUE.equals(!event.getRequestModeration())) {
-            participationRequest.setStatus(ParticipationRequestStatus.CONFIRMED);
-        } else {
-            // TODO Непонятно, что тут дальше? Что делать после "не требуется"?
-        }
-        return null;
-    }
-
-    @Override
-    public ParticipationRequestDto rejectParticipationRequestOfEventId(Long userId, Long eventId, Long reqId) {
-        return null;
+        participationRequest.setStatus(ParticipationRequestStatus.REJECTED);
+        return EntityMapper.toParticipationRequestDto(requestRepository.save(participationRequest));
     }
 
     @Override
     public Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
-        return null;
+        return requestRepository.findAllByRequesterIdAndEventId(userId, eventId)
+                .stream()
+                .map(EntityMapper::toParticipationRequestDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Collection<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId) {
-        return null;
+        return requestRepository.findAllByRequesterId(userId)
+                .stream()
+                .map(EntityMapper::toParticipationRequestDto)
+                .collect(Collectors.toList());
     }
 }
