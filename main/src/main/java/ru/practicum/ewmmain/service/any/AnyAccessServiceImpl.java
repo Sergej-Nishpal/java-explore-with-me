@@ -2,6 +2,7 @@ package ru.practicum.ewmmain.service.any;
 
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 
+@Slf4j //TODO Логирование!
 @Service
 @RequiredArgsConstructor
 public class AnyAccessServiceImpl implements AnyAccessService {

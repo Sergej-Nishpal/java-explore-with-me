@@ -1,6 +1,7 @@
 package ru.practicum.ewmmain.service.auth;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+@Slf4j // TODO Где тут логирование?!
 @Service
 @RequiredArgsConstructor
 public class AuthAccessServiceImpl implements AuthAccessService {
