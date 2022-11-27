@@ -3,6 +3,7 @@ package ru.practicum.ewmmain.dto;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Value;
+import lombok.extern.jackson.Jacksonized;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.model.Location;
 
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 
 @Value
 @Builder
+@Jacksonized
 public class EventFullDto {
     Long id;
     String title;
@@ -31,6 +33,6 @@ public class EventFullDto {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
     LocalDateTime publishedOn;
-    Long confirmedRequests;
+    Integer confirmedRequests;
     Long views;
 }

@@ -7,6 +7,7 @@ import ru.practicum.ewmmain.dto.*;
 import ru.practicum.ewmmain.dto.incoming.*;
 import ru.practicum.ewmmain.model.*;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Component
@@ -46,8 +47,21 @@ public class EntityMapper {
                 .build();
     }
 
-    public static Event toEvent(NewEventDto newEventDto) {
+    public static Event toEvent(NewEventDto newEventDto, Category category, Location location, User initiator) {
         return Event.builder()
+                .title(newEventDto.getTitle())
+                .annotation(newEventDto.getAnnotation())
+                .description(newEventDto.getDescription())
+                .category(category)
+                .paid(newEventDto.getPaid())
+                .participantLimit(newEventDto.getParticipantLimit())
+                .confirmedRequests(0)
+                .location(location)
+                .eventDate(newEventDto.getEventDate())
+                .initiator(initiator)
+                .requestModeration(newEventDto.getRequestModeration())
+                .createdOn(LocalDateTime.now())
+                .state(EventState.PENDING)
                 .build();
     }
 
@@ -106,6 +120,15 @@ public class EntityMapper {
         return Location.builder()
                 .lat(locationDto.getLat())
                 .lon(locationDto.getLon())
+                .build();
+    }
+
+    public static ParticipationRequestDto toParticipationRequestDto(ParticipationRequest participationRequest) {
+        return ParticipationRequestDto.builder()
+                .id(participationRequest.getId())
+                .event(participationRequest.getEventId())
+                .requester(participationRequest.getRequesterId())
+                .status(participationRequest.getStatus())
                 .build();
     }
 }

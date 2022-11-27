@@ -13,13 +13,8 @@ import ru.practicum.ewmmain.dto.incoming.NewEventDto;
 import ru.practicum.ewmmain.dto.incoming.UpdateEventRequest;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.*;
-import ru.practicum.ewmmain.model.Event;
-import ru.practicum.ewmmain.model.EventState;
-import ru.practicum.ewmmain.model.Location;
-import ru.practicum.ewmmain.repository.CategoryRepository;
-import ru.practicum.ewmmain.repository.EventRepository;
-import ru.practicum.ewmmain.repository.LocationRepository;
-import ru.practicum.ewmmain.repository.UserRepository;
+import ru.practicum.ewmmain.model.*;
+import ru.practicum.ewmmain.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -29,8 +24,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthAccessServiceImpl implements AuthAccessService {
     private final UserRepository userRepository;
-    private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
+    private final EventRepository eventRepository;
+    private final RequestRepository requestRepository;
     private final LocationRepository locationRepository;
 
     @Override
@@ -53,7 +49,8 @@ public class AuthAccessServiceImpl implements AuthAccessService {
 
         if (event != null) {
             if (event.getState().equals(EventState.PUBLISHED)) {
-                throw new IncorrectEventStateException(EventState.PUBLISHED.name());
+                throw new IncorrectEventStateException("Изменить можно только отмененные события или " +
+                        "события в состоянии ожидания модерации!");
             }
 
             if (!event.getEventDate().minusHours(hoursBeforeForUpdateEvent).isAfter(LocalDateTime.now())) {
@@ -96,45 +93,126 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                 .build();
 
         final Location location = locationRepository.save(EntityMapper.toLocation(locationDto));
+        final Category category = categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
+            throw new CategoryNotFoundException(newEventDto.getCategory());
+        });
 
-        final Event event = Event.builder()
-                .title(newEventDto.getTitle())
-                .annotation(newEventDto.getAnnotation())
-                .description(newEventDto.getDescription())
-                .category(categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
-                    throw new CategoryNotFoundException(newEventDto.getCategory());
-                }))
-                .paid(newEventDto.getPaid())
-                .participantLimit(newEventDto.getParticipantLimit())
-                .location(location)
-                .eventDate(newEventDto.getEventDate())
-                .initiator(userRepository.findById(userId).orElseThrow(() -> {
-                    throw new UserNotFoundException(userId);
-                }))
-                .requestModeration(newEventDto.getRequestModeration())
-                .createdOn(LocalDateTime.now())
-                .state(EventState.PENDING)
-                .build();
+        final User initiator = userRepository.findById(userId).orElseThrow(() -> {
+            throw new UserNotFoundException(userId);
+        });
+
+        final Event event = EntityMapper.toEvent(newEventDto, category, location, initiator);
         return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 
     @Override
     public EventFullDto getEventByUserIdAndEventId(Long userId, Long eventId) {
-        return null;
+        final Event event = eventRepository.findAllByIdAndInitiatorId(eventId, userId);
+        if (event == null) {
+            throw new EventNotFoundException(eventId);
+        } else {
+            return EntityMapper.toEventFullDto(event);
+        }
     }
 
     @Override
+    @Transactional
     public EventFullDto cancelEventByUserIdAndEventId(Long userId, Long eventId) {
-        return null;
+        //Отменить можно только событие в состоянии ожидания модерации.
+        final Event event = eventRepository.findAllByIdAndInitiatorId(eventId, userId);
+
+        if (event == null) {
+            throw new EventNotFoundException(eventId);
+        } else {
+            if (!event.getInitiator().getId().equals(userId)) {
+                throw new UnauthorisedAccessException(String.format("Пользователь с id = %d пытается отменить " +
+                        "чужое событие с id = %d!", userId, eventId));
+            }
+
+            if (!event.getState().equals(EventState.PENDING)) {
+                throw new IncorrectEventStateException("Отменить можно только событие в состоянии ожидания модерации");
+            } else {
+                event.setState(EventState.CANCELED);
+                return EntityMapper.toEventFullDto(eventRepository.save(event));
+            }
+        }
     }
 
     @Override
-    public Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
-        return null;
+    @Transactional
+    public ParticipationRequestDto addParticipationRequestsOfUserId(Long userId, Long eventId) {
+        //нельзя добавить повторный запрос //TODO отработает за счёт уникальности в БД?
+        //инициатор события не может добавить запрос на участие в своём событии
+        //нельзя участвовать в неопубликованном событии
+        //если у события достигнут лимит запросов на участие - необходимо вернуть ошибку
+        //если для события отключена пре-модерация запросов на участие, то запрос должен автоматически перейти в состояние подтвержденного
+        final Event event = eventRepository.findById(eventId).orElseThrow(() -> {
+            throw new EventNotFoundException(eventId);
+        });
+
+        if (event.getInitiator().getId().equals(userId)) {
+            throw new ParticipationRequestException("Инициатор события не может добавить запрос на участие " +
+                    "в своём событии");
+        }
+
+        if (!event.getState().equals(EventState.PUBLISHED)) {
+            throw new ParticipationRequestException("Нельзя участвовать в неопубликованном событии!");
+        }
+
+        if (event.getConfirmedRequests().intValue() == event.getParticipantLimit().intValue()) {
+            throw new ParticipationRequestException("У события достигнут лимит запросов на участие!");
+        }
+
+        final ParticipationRequest participationRequest = ParticipationRequest.builder()
+                .requesterId(userId)
+                .eventId(eventId)
+                .created(LocalDateTime.now())
+                .status(Boolean.FALSE.equals(event.getRequestModeration())
+                        ? ParticipationRequestStatus.CONFIRMED
+                        : ParticipationRequestStatus.PENDING)
+                .build();
+        return EntityMapper.toParticipationRequestDto(requestRepository.save(participationRequest));
+    }
+
+    @Override
+    @Transactional
+    public ParticipationRequestDto cancelParticipationRequestId(Long userId, Long requestId) {
+        final ParticipationRequest participationRequest = requestRepository.findById(requestId).orElseThrow(() -> {
+            throw new ParticipationRequestException(String.format("Запрос с id = %d не найден!", requestId));
+        });
+
+        if (!participationRequest.getRequesterId().equals(userId)) {
+            throw new UnauthorisedAccessException(String.format("Пользователь с id = %d пытается отменить " +
+                    "чужой запрос на участие в событии с id = %d!", userId, requestId));
+        }
+
+        participationRequest.setStatus(ParticipationRequestStatus.CANCELED);
+        return EntityMapper.toParticipationRequestDto(requestRepository.save(participationRequest));
     }
 
     @Override
     public ParticipationRequestDto confirmParticipationRequestOfEventId(Long userId, Long eventId, Long reqId) {
+        //если для события лимит заявок равен 0 или отключена пре-модерация заявок, то подтверждение заявок не требуется
+        //нельзя подтвердить заявку, если уже достигнут лимит по заявкам на данное событие
+        //если при подтверждении данной заявки, лимит заявок для события исчерпан, то все неподтверждённые заявки необходимо отклонить
+        final Event event = eventRepository.findById(eventId).orElseThrow(() -> {
+            throw new EventNotFoundException(eventId);
+        });
+
+        if (!event.getInitiator().getId().equals(userId)) {
+            throw new UnauthorisedAccessException(String.format("Пользователь с id = %d пытается подтвердить " +
+                    "чужой запрос на чужое событие с id = %d!", userId, eventId));
+        }
+
+        final ParticipationRequest participationRequest = requestRepository.findById(reqId).orElseThrow(() -> {
+            throw new ParticipationRequestException(String.format("Запрос с id = %d не найден!", reqId));
+        });
+
+        if (event.getParticipantLimit() == 0 || Boolean.TRUE.equals(!event.getRequestModeration())) {
+            participationRequest.setStatus(ParticipationRequestStatus.CONFIRMED);
+        } else {
+            // TODO Непонятно, что тут дальше? Что делать после "не требуется"?
+        }
         return null;
     }
 
@@ -144,17 +222,12 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
+    public Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
+        return null;
+    }
+
+    @Override
     public Collection<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId) {
-        return null;
-    }
-
-    @Override
-    public ParticipationRequestDto addParticipationRequestsOfUserId(Long userId, Long eventId) {
-        return null;
-    }
-
-    @Override
-    public ParticipationRequestDto cancelParticipationRequestId(Long userId, Long requestId) {
         return null;
     }
 }

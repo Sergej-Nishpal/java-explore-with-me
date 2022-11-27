@@ -63,5 +63,5 @@ public class Event {
     private LocalDateTime publishedOn;
 
     @Column(name = "confirmed_requests")
-    private Long confirmedRequests;
+    private Integer confirmedRequests;
 }

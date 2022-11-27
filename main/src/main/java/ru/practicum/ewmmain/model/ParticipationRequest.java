@@ -3,6 +3,7 @@ package ru.practicum.ewmmain.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "requests", schema = "public")
@@ -19,13 +20,13 @@ public class ParticipationRequest {
     private Long id;
 
     @Column(name = "created_on")
-    private String created;
+    private LocalDateTime created;
 
     @Column(name = "event_id")
-    private String eventId;
+    private Long eventId;
 
     @Column(name = "requester_id")
-    private String requesterId;
+    private Long requesterId;
 
     @Enumerated(EnumType.STRING)
     private ParticipationRequestStatus status;
