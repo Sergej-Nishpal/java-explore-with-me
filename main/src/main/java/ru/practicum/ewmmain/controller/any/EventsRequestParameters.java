@@ -18,7 +18,7 @@ public class EventsRequestParameters {
 
     @NotBlank
     private String text;
-    private Set<Integer> categoryIds;
+    private Set<Long> categoryIds;
     private Boolean paid;
     private LocalDateTime rangeStart;
     private LocalDateTime rangeEnd;

@@ -1,5 +1,6 @@
 package ru.practicum.ewmmain.service.admin;
 
+import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -23,7 +24,9 @@ import ru.practicum.ewmmain.repository.EventRepository;
 import ru.practicum.ewmmain.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -37,9 +40,18 @@ public class AdminAccessServiceImpl implements AdminAccessService {
 
     @Override
     public Collection<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
-                                              Set<Integer> categories, LocalDateTime rangeStart,
+                                              Set<Long> categories, LocalDateTime rangeStart,
                                               LocalDateTime rangeEnd, Integer from, Integer size) {
-        return Collections.emptyList();
+        final QEvent event = QEvent.event;
+        final Predicate predicate = event.initiator.id.in(users)
+                .and(event.state.in(states))
+                .and(event.category.id.in(categories))
+                .and(event.eventDate.between(rangeStart, rangeEnd));
+        final Pageable pageable = PageRequest.of(from / size, size);
+        return eventRepository.findAll(predicate, pageable)
+                .stream()
+                .map(EntityMapper::toEventFullDto)
+                .collect(Collectors.toList());
     }
 
     @Override

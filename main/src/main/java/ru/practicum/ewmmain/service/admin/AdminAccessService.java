@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Set;
 
 public interface AdminAccessService {
-    Collection<EventFullDto> getEvents(Set<Long> users, Set<EventState> states, Set<Integer> categories,
+    Collection<EventFullDto> getEvents(Set<Long> users, Set<EventState> states, Set<Long> categories,
                                        LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
 
     EventFullDto updateEvent(Long eventId, AdminUpdateEventRequest adminUpdateEventRequest);

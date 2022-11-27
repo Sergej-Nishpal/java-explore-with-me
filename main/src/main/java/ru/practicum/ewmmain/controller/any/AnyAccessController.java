@@ -32,14 +32,14 @@ public class AnyAccessController {
 
     @GetMapping("/events")
     public Collection<EventShortDto> getEvents(@RequestParam String text,
-                                               @RequestParam Set<Integer> categories,
+                                               @RequestParam Set<Long> categories,
                                                @RequestParam Boolean paid,
-                                               @RequestParam (required = false)
-                                                   @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                                   LocalDateTime rangeStart,
-                                               @RequestParam (required = false)
-                                                   @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                                   LocalDateTime rangeEnd,
+                                               @RequestParam(required = false)
+                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                               LocalDateTime rangeStart,
+                                               @RequestParam(required = false)
+                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                               LocalDateTime rangeEnd,
                                                @RequestParam(defaultValue = "false") Boolean onlyAvailable,
                                                @RequestParam String sort,
                                                @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,

@@ -28,7 +28,7 @@ public class AdminAccessController {
     @GetMapping("/events")
     public Collection<EventFullDto> getEvents(@RequestParam Set<Long> users,
                                               @RequestParam Set<EventState> states,
-                                              @RequestParam Set<Integer> categories,
+                                              @RequestParam Set<Long> categories,
                                               @RequestParam(required = false)
                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                               LocalDateTime rangeStart,
