@@ -7,7 +7,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewmstat.dto.EndpointHitDto;
 import ru.practicum.ewmstat.dto.mapper.EndpointHitMapper;
-import ru.practicum.ewmstat.model.EndpointHit;
 import ru.practicum.ewmstat.model.ViewStats;
 import ru.practicum.ewmstat.service.StatService;
 

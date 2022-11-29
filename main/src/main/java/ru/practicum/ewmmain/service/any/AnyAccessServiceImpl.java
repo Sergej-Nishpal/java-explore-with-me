@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 public class AnyAccessServiceImpl implements AnyAccessService {
     private final EventRepository eventRepository;
     private final StatClient statClient;
+
     @Override
     public Collection<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
                                                String path, String appName) {

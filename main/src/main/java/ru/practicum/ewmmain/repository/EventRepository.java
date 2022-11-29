@@ -9,12 +9,9 @@ import ru.practicum.ewmmain.model.EventState;
 import java.util.List;
 
 public interface EventRepository extends JpaRepository<Event, Long>, QuerydslPredicateExecutor<Event> {
-
     Event findAllByIdAndInitiatorId(long eventId, long initiatorId);
+
     List<Event> findAllByInitiatorId(long initiatorId, Pageable pageable);
 
-    Event findByIdAndState(long EventId, EventState eventState);
-
-    //@Query
-    //Collection<Event> findAllWithParameters();
+    Event findByIdAndState(long eventId, EventState eventState);
 }

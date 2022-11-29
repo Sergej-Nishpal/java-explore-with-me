@@ -8,6 +8,8 @@ import java.util.Collection;
 
 public interface RequestRepository extends JpaRepository<ParticipationRequest, Long> {
     Collection<ParticipationRequest> findAllByRequesterIdAndEventId(long requesterId, long eventId);
+
     Collection<ParticipationRequest> findAllByRequesterId(long requesterId);
+
     Collection<ParticipationRequest> findAllByEventIdAndStatus(long eventId, ParticipationRequestStatus status);
 }

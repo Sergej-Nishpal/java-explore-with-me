@@ -25,6 +25,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class StatClient {
     private static final String STAT_URL = "http://localhost:9090";
+    private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private final WebClient webClient;
 
     public StatClient() {
@@ -63,13 +64,14 @@ public class StatClient {
                 .onStatus(HttpStatus::isError, response -> {
                     throw new StatClientException("Ошибка получения данных от сервера статистики!");
                 })
-                .bodyToMono(new ParameterizedTypeReference<Collection<ViewStats>>() {})
+                .bodyToMono(new ParameterizedTypeReference<Collection<ViewStats>>() {
+                })
                 .block();
     }
 
     private String dateTimeFormatEncode(LocalDateTime localDateTime) {
         return URLEncoder
-                .encode(localDateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")),
+                .encode(localDateTime.format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)),
                         StandardCharsets.UTF_8);
     }
 }
