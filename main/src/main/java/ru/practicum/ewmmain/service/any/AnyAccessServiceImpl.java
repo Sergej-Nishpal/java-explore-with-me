@@ -14,29 +14,36 @@ import ru.practicum.ewmmain.dto.CategoryDto;
 import ru.practicum.ewmmain.dto.CompilationDto;
 import ru.practicum.ewmmain.dto.EventFullDto;
 import ru.practicum.ewmmain.dto.EventShortDto;
+import ru.practicum.ewmmain.dto.incoming.ViewStats;
+import ru.practicum.ewmmain.dto.mapper.EntityMapper;
+import ru.practicum.ewmmain.model.EndpointHitDto;
 import ru.practicum.ewmmain.model.Event;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.model.QEvent;
 import ru.practicum.ewmmain.repository.EventRepository;
+import ru.practicum.ewmmain.statclient.StatClient;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j //TODO Логирование!
 @Service
 @RequiredArgsConstructor
 public class AnyAccessServiceImpl implements AnyAccessService {
     private final EventRepository eventRepository;
+    private final StatClient statClient;
     @Override
     public Collection<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
                                                String path, String appName) {
-        //это публичный эндпоинт, соответственно в выдаче должны быть только опубликованные события
-        //текстовый поиск (по аннотации и подробному описанию) должен быть без учета регистра букв
-        //если в запросе не указан диапазон дат [rangeStart-rangeEnd], то нужно выгружать события, которые произойдут позже текущей даты и времени
-        //информация о каждом событии должна включать в себя количество просмотров и количество уже одобренных заявок на участие
-        //информацию о том, что по этому эндпоинту был осуществлен и обработан запрос, нужно сохранить в сервисе статистики
+        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
+                .app(appName)
+                .uri(path)
+                .ip(ip)
+                .timestamp(LocalDateTime.now())
+                .build();
 
+        statClient.save(endpointHitDto);
         final QEvent event = QEvent.event;
 
         final Predicate eventDatePredicate = parameters.getRangeStart() == null && parameters.getRangeEnd() == null
@@ -51,28 +58,47 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                 .and(eventDatePredicate)
                 .and(event.confirmedRequests.lt(event.participantLimit));
 
+        Pageable pageable;
+        Collection<EventShortDto> eventsResult;
+
         if (parameters.getSort().equals(EventSortType.EVENT_DATE)) {
-            final Pageable pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
+            pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
                     parameters.getSize(), Sort.by("eventDate"));
-            Page<Event> events = eventRepository.findAll(predicate, pageable);
-            // TODO Тут дальше надо клиента статистики для получения views и сохранения запроса.
+            eventsResult = getEventShorts(parameters, predicate, pageable);
+            return eventsResult;
+        } else {
+            pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
+                    parameters.getSize());
+            eventsResult = getEventShorts(parameters, predicate, pageable);
+            return eventsResult.stream()
+                    .sorted(Comparator.comparingLong(EventShortDto::getViews))
+                    .collect(Collectors.toList());
         }
-
-
-
-        // TODO:
-        // - формирование параметров
-        // - запрос к базе по параметрам
-        // - сохранение запроса в статистику
-        return Collections.emptyList();
     }
 
     @Override
     public EventFullDto getEventById(Long eventId, String ip, String path, String appName) {
-        // TODO:
-        // - запрос к базе по id
-        // - сохранение запроса в статистику
-        return null;
+        final Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED);
+        Collection<ViewStats> stats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(),
+                Set.of(path), false);
+        long views = 0;
+        for (ViewStats viewStats : stats) {
+            if (viewStats.getUri().equals(path)) {
+                views = viewStats.getHits();
+                break;
+            }
+        }
+
+        EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
+        eventFullDto.setViews(views);
+        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
+                .app(appName)
+                .uri(path)
+                .ip(ip)
+                .timestamp(LocalDateTime.now())
+                .build();
+        statClient.save(endpointHitDto);
+        return eventFullDto;
     }
 
     @Override
@@ -103,5 +129,27 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         // TODO:
         // - запрос к базе по id
         return null;
+    }
+
+    private Collection<EventShortDto> getEventShorts(EventsRequestParameters parameters,
+                                                     Predicate predicate, Pageable pageable) {
+        Page<Event> events = eventRepository.findAll(predicate, pageable);
+        Set<String> uris = events.stream()
+                .map(e -> ("/events/" + e.getId()))
+                .collect(Collectors.toSet());
+        Collection<ViewStats> viewStats = statClient.getStats(parameters.getRangeStart(),
+                parameters.getRangeEnd(), uris, false);
+        Collection<EventShortDto> eventsResult = events.stream()
+                .map(EntityMapper::toEventShortDto)
+                .collect(Collectors.toList());
+        for (EventShortDto eventShortDto : eventsResult) {
+            for (ViewStats view : viewStats) {
+                if (view.getUri().contains(eventShortDto.getId().toString())) {
+                    eventShortDto.setViews(view.getHits());
+                }
+            }
+        }
+
+        return eventsResult;
     }
 }

@@ -2,6 +2,8 @@ package ru.practicum.ewmmain.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
 import ru.practicum.ewmmain.model.EventState;
@@ -9,8 +11,9 @@ import ru.practicum.ewmmain.model.Location;
 
 import java.time.LocalDateTime;
 
-@Value
 @Builder
+@Getter
+@Setter
 @Jacksonized
 public class EventFullDto {
     Long id;

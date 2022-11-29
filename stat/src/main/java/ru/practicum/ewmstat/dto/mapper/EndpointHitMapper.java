@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
 import ru.practicum.ewmstat.dto.EndpointHitDto;
 import ru.practicum.ewmstat.model.EndpointHit;
+import ru.practicum.ewmstat.model.ViewStats;
 
 @Component
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

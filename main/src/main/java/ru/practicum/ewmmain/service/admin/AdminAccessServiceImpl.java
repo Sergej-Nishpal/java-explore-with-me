@@ -71,7 +71,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         }
 
         if (!event.getState().equals(EventState.PENDING)) {
-            throw new NotPendingStateException(event.getState().name());
+            throw new EventStateException("Событие должно быть в состоянии ожидания публикации!");
         }
 
         event.setState(EventState.PUBLISHED);
@@ -84,8 +84,8 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         //событие не должно быть опубликовано
         Event event = getEventWithCheck(eventId);
 
-        if (!event.getState().equals(EventState.PUBLISHED)) {
-            throw new NotPendingStateException(event.getState().name());
+        if (event.getState().equals(EventState.PUBLISHED)) {
+            throw new EventStateException("Событие не должно быть опубликовано!");
         }
 
         event.setState(EventState.CANCELED);

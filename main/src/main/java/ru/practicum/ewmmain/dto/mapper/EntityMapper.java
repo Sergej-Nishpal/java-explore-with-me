@@ -42,8 +42,8 @@ public class EntityMapper {
                 .requestModeration(event.getRequestModeration())
                 .createdOn(event.getCreatedOn())
                 .state(event.getState())
-                .publishedOn(event.getPublishedOn()) // TODO ?
-                .confirmedRequests(event.getConfirmedRequests()) // TODO ?
+                .publishedOn(event.getPublishedOn())
+                .confirmedRequests(event.getConfirmedRequests())
                 .build();
     }
 

@@ -6,8 +6,9 @@ import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 
-@Value
 @Builder
+@Getter
+@Setter
 @Jacksonized
 public class EventShortDto {
     Long id;

@@ -26,7 +26,7 @@ import java.util.Set;
 @RestController
 @RequiredArgsConstructor
 public class AnyAccessController {
-    private static final String APP = "Explore With Me Main";
+    private static final String APP = "ewm-main-service";
 
     private final AnyAccessService anyAccessService;
 
