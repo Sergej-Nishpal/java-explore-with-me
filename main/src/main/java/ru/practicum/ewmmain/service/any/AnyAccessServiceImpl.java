@@ -16,10 +16,11 @@ import ru.practicum.ewmmain.dto.EventFullDto;
 import ru.practicum.ewmmain.dto.EventShortDto;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
-import ru.practicum.ewmmain.model.EndpointHitDto;
-import ru.practicum.ewmmain.model.Event;
-import ru.practicum.ewmmain.model.EventState;
-import ru.practicum.ewmmain.model.QEvent;
+import ru.practicum.ewmmain.exception.CategoryNotFoundException;
+import ru.practicum.ewmmain.exception.CompilationNotFoundException;
+import ru.practicum.ewmmain.model.*;
+import ru.practicum.ewmmain.repository.CategoryRepository;
+import ru.practicum.ewmmain.repository.CompilationRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
 import ru.practicum.ewmmain.statclient.StatClient;
 
@@ -27,11 +28,13 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Slf4j //TODO Логирование!
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnyAccessServiceImpl implements AnyAccessService {
     private final EventRepository eventRepository;
+    private final CompilationRepository compilationRepository;
+    private final CategoryRepository categoryRepository;
     private final StatClient statClient;
 
     @Override
@@ -104,32 +107,38 @@ public class AnyAccessServiceImpl implements AnyAccessService {
 
     @Override
     public Collection<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
-        // TODO:
-        // - формирование параметров
-        // - запрос к базе по параметрам
-        return null;
+        final Pageable pageable = PageRequest.of(from / size, size);
+        final QCompilation compilation = QCompilation.compilation;
+        final Predicate predicate = compilation.pinned.eq(pinned);
+        return compilationRepository.findAll(predicate, pageable).stream()
+                .map(EntityMapper::toCompilationDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     public CompilationDto getCompilationById(Long compId) {
-        // TODO:
-        // - запрос к базе по id
-        return null;
+        final Compilation compilation = compilationRepository.findById(compId).orElseThrow(() -> {
+            log.error("Подборка с id = {} не найдена!", compId);
+            throw new CompilationNotFoundException(compId);
+        });
+        return EntityMapper.toCompilationDto(compilation);
     }
 
     @Override
     public Collection<CategoryDto> getCategories(Integer from, Integer size) {
-        // TODO:
-        // - формирование параметров
-        // - запрос к базе по параметрам
-        return null;
+        final Pageable pageable = PageRequest.of(from / size, size);
+        return categoryRepository.findAll(pageable).stream()
+                .map(EntityMapper::toCategoryDto)
+                .collect(Collectors.toList());
     }
 
     @Override
     public CategoryDto getCategoryById(Long catId) {
-        // TODO:
-        // - запрос к базе по id
-        return null;
+        final Category category = categoryRepository.findById(catId).orElseThrow(() -> {
+            log.error("Категория с id = {} не найдена!", catId);
+            throw new CategoryNotFoundException(catId);
+        });
+        return EntityMapper.toCategoryDto(category);
     }
 
     private Collection<EventShortDto> getEventShorts(EventsRequestParameters parameters,
