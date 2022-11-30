@@ -126,7 +126,7 @@ public class AdminAccessController {
 
     @DeleteMapping("/compilations/{compId}/events/{eventId}")
     public void deleteEventFromCompilation(@PathVariable @Positive Long compId,
-                                      @PathVariable @Positive Long eventId) {
+                                           @PathVariable @Positive Long eventId) {
 
         log.debug("Удаление админом события с id = {} из подборки с id = {}.", eventId, compId);
         adminAccessService.deleteEventFromCompilation(compId, eventId);
