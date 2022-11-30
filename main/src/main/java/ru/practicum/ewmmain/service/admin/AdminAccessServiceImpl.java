@@ -25,6 +25,7 @@ import ru.practicum.ewmmain.repository.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -43,10 +44,13 @@ public class AdminAccessServiceImpl implements AdminAccessService {
                                               Set<Long> categories, LocalDateTime rangeStart,
                                               LocalDateTime rangeEnd, Integer from, Integer size) {
         final QEvent event = QEvent.event;
-        final Predicate predicate = event.initiator.id.in(users)
-                .and(event.state.in(states))
-                .and(event.category.id.in(categories))
-                .and(event.eventDate.between(rangeStart, rangeEnd));
+        final Predicate eventDatePredicate = rangeStart == null && rangeEnd == null
+                ? event.eventDate.after(LocalDateTime.now())
+                : event.eventDate.between(rangeStart, rangeEnd);
+        final Predicate predicate = event.initiator.id.in(users != null ? users : Collections.emptySet())
+                .and(event.state.in(states != null ? states : Collections.emptySet()))
+                .and(event.category.id.in(categories != null ? categories : Collections.emptySet()))
+                .and(eventDatePredicate);
         final Pageable pageable = PageRequest.of(from / size, size);
         return eventRepository.findAll(predicate, pageable)
                 .stream()
@@ -55,9 +59,45 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     }
 
     @Override
-    public EventFullDto updateEvent(Long eventId, AdminUpdateEventRequest adminUpdateEventRequest) {
-
-        return null;
+    public EventFullDto updateEvent(Long eventId, AdminUpdateEventRequest request) {
+        final Event savedEvent = eventRepository.findById(eventId).orElseThrow(() -> {
+            throw new EventNotFoundException(eventId);
+        });
+        final Event eventToUpdate = Event.builder()
+                .title(request.getTitle() != null
+                        ? request.getTitle()
+                        : savedEvent.getTitle())
+                .annotation(request.getAnnotation() != null
+                        ? request.getAnnotation()
+                        : savedEvent.getAnnotation())
+                .description(request.getDescription() != null
+                        ? request.getDescription()
+                        : savedEvent.getDescription())
+                .category(request.getCategory() != null
+                        ? getCategoryWithCheck(request.getCategory())
+                        : savedEvent.getCategory())
+                .paid(request.getPaid() != null
+                        ? request.getPaid()
+                        : savedEvent.getPaid())
+                .participantLimit(request.getParticipantLimit() != null
+                        ? request.getParticipantLimit()
+                        : savedEvent.getParticipantLimit())
+                .location(request.getLocation() != null
+                        ? request.getLocation()
+                        : savedEvent.getLocation())
+                .eventDate(request.getEventDate() != null
+                        ? request.getEventDate()
+                        : savedEvent.getEventDate())
+                .initiator(savedEvent.getInitiator())
+                .requestModeration(request.getRequestModeration() != null
+                        ? request.getRequestModeration()
+                        : savedEvent.getRequestModeration())
+                .createdOn(savedEvent.getCreatedOn())
+                .state(savedEvent.getState())
+                .publishedOn(savedEvent.getPublishedOn())
+                .confirmedRequests(savedEvent.getConfirmedRequests())
+                .build();
+        return EntityMapper.toEventFullDto(eventRepository.save(eventToUpdate));
     }
 
     @Override
@@ -93,7 +133,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Transactional
     public CategoryDto changeCategory(CategoryDto categoryDto) {
         Category category = getCategoryWithCheck(categoryDto.getId());
-        category.setName(category.getName());
+        category.setName(categoryDto.getName());
         return EntityMapper.toCategoryDto(categoryRepository.save(category));
     }
 
@@ -107,7 +147,10 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     @Transactional
     public void deleteCategoryById(Long catId) {
-        categoryRepository.deleteById(catId);
+        Category category = categoryRepository.findById(catId).orElseThrow(() -> {
+            throw new CategoryNotFoundException(catId);
+        });
+        categoryRepository.deleteById(category.getId());
     }
 
     @Override
@@ -135,8 +178,11 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     @Transactional
     public CompilationDto addCompilation(NewCompilationDto newCompilationDto) {
-        final Collection<Event> events = eventRepository.findAllById(newCompilationDto.getEvents());
-        final Set<Event> eventSet = new HashSet<>(events);
+        final QEvent event = QEvent.event;
+        final Predicate predicate = event.id.in(newCompilationDto.getEvents());
+        final Iterable<Event> events = eventRepository.findAll(predicate);
+        final Set<Event> eventSet = new HashSet<>();
+        events.iterator().forEachRemaining(eventSet::add);
         final Compilation compilation = compilationRepository
                 .save(EntityMapper.toCompilation(newCompilationDto, eventSet));
         return EntityMapper.toCompilationDto(compilation);

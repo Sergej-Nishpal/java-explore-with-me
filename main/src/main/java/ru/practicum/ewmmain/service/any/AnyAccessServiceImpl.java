@@ -8,7 +8,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import ru.practicum.ewmmain.controller.any.EventSortType;
 import ru.practicum.ewmmain.controller.any.EventsRequestParameters;
 import ru.practicum.ewmmain.dto.CategoryDto;
 import ru.practicum.ewmmain.dto.CompilationDto;
@@ -56,10 +55,10 @@ public class AnyAccessServiceImpl implements AnyAccessService {
 
         final Predicate textPredicate;
         if (parameters.getText() != null) {
-            textPredicate = event.annotation.containsIgnoreCase(parameters.getText()).or(event.annotation
+            textPredicate = event.annotation.containsIgnoreCase(parameters.getText()).or(event.description
                             .containsIgnoreCase(parameters.getText()));
         } else {
-            textPredicate = event.annotation.containsIgnoreCase("").or(event.annotation
+            textPredicate = event.annotation.containsIgnoreCase("").or(event.description
                     .containsIgnoreCase(""));
         }
 
@@ -74,14 +73,12 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                 .and(event.paid.in(parameters.getPaid() != null
                                 ? Set.of(parameters.getPaid())
                                 : Set.of(Boolean.TRUE, Boolean.FALSE))
-                .and(event.state.in(parameters.getOnlyAvailable() != null
-                                ? (parameters.getOnlyAvailable().equals(true)
-                                ? Set.of(EventState.PUBLISHED)
-                                : Set.of(EventState.PENDING))
-                                : Set.of(EventState.PUBLISHED))
+                .and(event.state.eq(EventState.PUBLISHED))
                 .and(eventDatePredicate)
-                .and(event.confirmedRequests.lt(event.participantLimit))
-                .and(textPredicate)));
+                .and(parameters.getOnlyAvailable().equals(true)
+                        ? event.confirmedRequests.lt(event.participantLimit)
+                        : null)
+                .and(textPredicate));
 
         Pageable pageable;
         Collection<EventShortDto> eventsResult;
@@ -136,7 +133,9 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     public Collection<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
         final QCompilation compilation = QCompilation.compilation;
-        final Predicate predicate = compilation.pinned.eq(pinned);
+        final Predicate predicate = compilation.pinned.in(pinned != null
+                ? Set.of(pinned)
+                : Set.of(Boolean.TRUE, Boolean.FALSE));
         return compilationRepository.findAll(predicate, pageable).stream()
                 .map(EntityMapper::toCompilationDto)
                 .collect(Collectors.toList());

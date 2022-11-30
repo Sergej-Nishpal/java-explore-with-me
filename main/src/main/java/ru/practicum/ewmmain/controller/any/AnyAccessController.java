@@ -77,9 +77,11 @@ public class AnyAccessController {
     }
 
     @GetMapping("/compilations")
-    public Collection<CompilationDto> getCompilations(@RequestParam Boolean pinned,
-                                                      @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                                      @RequestParam(defaultValue = "10") @Positive Integer size) {
+    public Collection<CompilationDto> getCompilations(@RequestParam(required = false) Boolean pinned,
+                                                      @RequestParam(required = false, defaultValue = "0")
+                                                      @PositiveOrZero Integer from,
+                                                      @RequestParam(required = false, defaultValue = "10")
+                                                      @Positive Integer size) {
         log.debug("Получение подборок событий.");
         return anyAccessService.getCompilations(pinned, from, size);
     }

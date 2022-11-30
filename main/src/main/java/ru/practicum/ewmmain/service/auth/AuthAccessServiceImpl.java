@@ -42,41 +42,65 @@ public class AuthAccessServiceImpl implements AuthAccessService {
 
     @Override
     @Transactional
-    public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest updateEventRequest) {
+    public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
         //изменить можно только отмененные события или события в состоянии ожидания модерации
         //если редактируется отменённое событие, то оно автоматически переходит в состояние ожидания модерации
         //дата и время на которые намечено событие не может быть раньше, чем через два часа от текущего момента
         final int hoursBeforeForUpdateEvent = 2;
-        final Event event = eventRepository.findAllByIdAndInitiatorId(userId, updateEventRequest.getEventId());
 
-        if (event != null) {
-            if (event.getState().equals(EventState.PUBLISHED)) {
+        if (!request.getEventDate().minusHours(hoursBeforeForUpdateEvent).isAfter(LocalDateTime.now())) {
+            throw new IncorrectEventDateException(hoursBeforeForUpdateEvent);
+        }
+
+        final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
+
+        final Event eventToUpdate;
+
+        if (savedEvent != null) {
+            if (savedEvent.getState().equals(EventState.PUBLISHED)) {
                 throw new IncorrectEventStateException("Изменить можно только отмененные события или " +
                         "события в состоянии ожидания модерации!");
             }
 
-            if (!event.getEventDate().minusHours(hoursBeforeForUpdateEvent).isAfter(LocalDateTime.now())) {
-                throw new IncorrectEventDateException(hoursBeforeForUpdateEvent);
+            if (savedEvent.getState().equals(EventState.CANCELED)) {
+                savedEvent.setState(EventState.PENDING);
             }
 
-            if (event.getState().equals(EventState.CANCELED)) {
-                event.setState(EventState.PENDING);
-            }
-
-            event.setTitle(updateEventRequest.getTitle());
-            event.setAnnotation(updateEventRequest.getAnnotation());
-            event.setDescription(updateEventRequest.getDescription());
-            event.setCategory(categoryRepository.findById(updateEventRequest.getCategoryId()).orElseThrow(() -> {
-                throw new CategoryNotFoundException(updateEventRequest.getCategoryId());
-            }));
-            event.setPaid(updateEventRequest.getPaid());
-            event.setParticipantLimit(updateEventRequest.getParticipantLimit());
-            event.setEventDate(updateEventRequest.getEventDate());
+            eventToUpdate = Event.builder()
+                    .title(request.getTitle() != null
+                            ? request.getTitle()
+                            : savedEvent.getTitle())
+                    .annotation(request.getAnnotation() != null
+                            ? request.getAnnotation()
+                            : savedEvent.getAnnotation())
+                    .description(request.getDescription() != null
+                            ? request.getDescription()
+                            : savedEvent.getDescription())
+                    .category(request.getCategoryId() != null
+                            ? categoryRepository.findById(request.getCategoryId()).orElseThrow(() -> {
+                        throw new CategoryNotFoundException(request.getCategoryId());
+                    })
+                            : savedEvent.getCategory())
+                    .paid(request.getPaid() != null
+                            ? request.getPaid()
+                            : savedEvent.getPaid())
+                    .participantLimit(request.getParticipantLimit() != null
+                            ? request.getParticipantLimit()
+                            : savedEvent.getParticipantLimit())
+                    .eventDate(request.getEventDate())
+                    .location(savedEvent.getLocation())
+                    .initiator(savedEvent.getInitiator())
+                    .requestModeration(savedEvent.getRequestModeration())
+                    .createdOn(savedEvent.getCreatedOn())
+                    .state(savedEvent.getState())
+                    .publishedOn(savedEvent.getPublishedOn())
+                    .confirmedRequests(savedEvent.getConfirmedRequests())
+                    .build();
         } else {
-            throw new EventNotFoundException(updateEventRequest.getEventId());
+            throw new EventNotFoundException(request.getEventId());
         }
 
-        return EntityMapper.toEventFullDto(eventRepository.save(event));
+        return EntityMapper.toEventFullDto(eventRepository.save(eventToUpdate));
     }
 
     @Override
@@ -248,7 +272,17 @@ public class AuthAccessServiceImpl implements AuthAccessService {
 
     @Override
     public Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
-        return requestRepository.findAllByRequesterIdAndEventId(userId, eventId)
+        final User user = userRepository.findById(userId).orElseThrow(() -> {
+            throw new UserNotFoundException(userId);
+        });
+        final Event event = eventRepository.findById(eventId).orElseThrow(() -> {
+            throw new EventNotFoundException(eventId);
+        });
+        if (!event.getInitiator().getId().equals(user.getId())) {
+            throw new UnauthorisedAccessException(String.format("Пользователь с id = %d пытается получить " +
+                    "перечень запросов на чужое событие с id = %d!", userId, eventId));
+        }
+        return requestRepository.findAllByEventId(eventId)
                 .stream()
                 .map(EntityMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());

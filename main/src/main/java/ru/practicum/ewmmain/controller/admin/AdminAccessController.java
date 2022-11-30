@@ -26,17 +26,19 @@ public class AdminAccessController {
     private final AdminAccessService adminAccessService;
 
     @GetMapping("/events")
-    public Collection<EventFullDto> getEvents(@RequestParam Set<Long> users,
-                                              @RequestParam Set<EventState> states,
-                                              @RequestParam Set<Long> categories,
+    public Collection<EventFullDto> getEvents(@RequestParam(required = false) Set<Long> users,
+                                              @RequestParam(required = false) Set<EventState> states,
+                                              @RequestParam(required = false) Set<Long> categories,
                                               @RequestParam(required = false)
                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                               LocalDateTime rangeStart,
                                               @RequestParam(required = false)
                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                               LocalDateTime rangeEnd,
-                                              @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                              @RequestParam(defaultValue = "10") @Positive Integer size) {
+                                              @RequestParam(required = false, defaultValue = "0")
+                                              @PositiveOrZero Integer from,
+                                              @RequestParam(required = false, defaultValue = "10")
+                                              @Positive Integer size) {
 
         log.debug("Запрос админом информации о событиях.");
         return adminAccessService.getEvents(users, states, categories, rangeStart, rangeEnd, from, size);

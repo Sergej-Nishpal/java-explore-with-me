@@ -9,6 +9,7 @@ import ru.practicum.ewmmain.model.*;
 
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -111,6 +112,9 @@ public class EntityMapper {
     public static CompilationDto toCompilationDto(Compilation compilation) {
         return CompilationDto.builder()
                 .id(compilation.getId())
+                .events(compilation.getEvents().stream()
+                        .map(EntityMapper::toEventShortDto)
+                        .collect(Collectors.toSet()))
                 .title(compilation.getTitle())
                 .pinned(compilation.getPinned())
                 .build();

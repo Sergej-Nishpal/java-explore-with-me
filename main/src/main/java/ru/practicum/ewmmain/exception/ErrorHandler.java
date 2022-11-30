@@ -42,7 +42,8 @@ public class ErrorHandler {
                 .build();
     }*/
 
-    /*@ExceptionHandler() //TODO
+    @ExceptionHandler({UserNotFoundException.class, CategoryNotFoundException.class,
+            EventNotFoundException.class, CompilationNotFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiError handle404Error(final RuntimeException e) {
         log.error("404 - Объект не найден: {} ", e.getMessage(), e);
@@ -53,9 +54,9 @@ public class ErrorHandler {
                 .status(HttpStatus.NOT_FOUND.name())
                 .timestamp(LocalDateTime.now())
                 .build();
-    }*/
+    }
 
-    /*@ExceptionHandler({DataIntegrityViolationException.class})
+    @ExceptionHandler({DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handle409Error(final RuntimeException e) {
         log.error("409 - Конфликт данных: {} ", e.getMessage(), e);
@@ -66,7 +67,7 @@ public class ErrorHandler {
                 .status(HttpStatus.CONFLICT.name())
                 .timestamp(LocalDateTime.now())
                 .build();
-    }*/
+    }
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
