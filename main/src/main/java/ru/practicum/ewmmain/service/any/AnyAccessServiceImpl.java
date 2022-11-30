@@ -9,10 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import ru.practicum.ewmmain.controller.any.EventsRequestParameters;
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.EventShortDto;
+import ru.practicum.ewmmain.dto.*;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.CategoryNotFoundException;
@@ -56,7 +53,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         final Predicate textPredicate;
         if (parameters.getText() != null) {
             textPredicate = event.annotation.containsIgnoreCase(parameters.getText()).or(event.description
-                            .containsIgnoreCase(parameters.getText()));
+                    .containsIgnoreCase(parameters.getText()));
         } else {
             textPredicate = event.annotation.containsIgnoreCase("").or(event.description
                     .containsIgnoreCase(""));
@@ -67,18 +64,18 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                 : event.eventDate.between(parameters.getRangeStart(), parameters.getRangeEnd());
 
         final Predicate predicate = event.category.id.in(
-                parameters.getCategoryIds() != null
-                        ? parameters.getCategoryIds()
-                        : Collections.emptySet())
+                        parameters.getCategoryIds() != null
+                                ? parameters.getCategoryIds()
+                                : Collections.emptySet())
                 .and(event.paid.in(parameters.getPaid() != null
                                 ? Set.of(parameters.getPaid())
                                 : Set.of(Boolean.TRUE, Boolean.FALSE))
-                .and(event.state.eq(EventState.PUBLISHED))
-                .and(eventDatePredicate)
-                .and(parameters.getOnlyAvailable().equals(true)
-                        ? event.confirmedRequests.lt(event.participantLimit)
-                        : null)
-                .and(textPredicate));
+                        .and(event.state.eq(EventState.PUBLISHED))
+                        .and(eventDatePredicate)
+                        .and(parameters.getOnlyAvailable().equals(true)
+                                ? event.confirmedRequests.lt(event.participantLimit)
+                                : null)
+                        .and(textPredicate));
 
         Pageable pageable;
         Collection<EventShortDto> eventsResult;

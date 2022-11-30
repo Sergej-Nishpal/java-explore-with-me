@@ -11,7 +11,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.core.publisher.Mono;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.exception.StatClientException;
-import ru.practicum.ewmmain.model.EndpointHitDto;
+import ru.practicum.ewmmain.dto.EndpointHitDto;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;

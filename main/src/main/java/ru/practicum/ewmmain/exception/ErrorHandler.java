@@ -18,7 +18,7 @@ public class ErrorHandler {
     @ExceptionHandler({ConstraintViolationException.class, NullPointerException.class,
             HttpMessageNotReadableException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiError handle400Error(final RuntimeException e) {
+    public ApiError handleValidationError(final RuntimeException e) {
         log.error("400 - Ошибка валидации: {} ", e.getMessage(), e);
         return ApiError.builder()
                 .errors(e.getStackTrace())
@@ -29,23 +29,10 @@ public class ErrorHandler {
                 .build();
     }
 
-    /*@ExceptionHandler() //TODO
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    public ApiError handle403Error(final RuntimeException e) {
-        log.error("403 - Действие запрещено: {} ", e.getMessage(), e);
-        return ApiError.builder()
-                .errors(e.getStackTrace())
-                .message(e.getMessage())
-                .reason("For the requested operation the conditions are not met.")
-                .status(HttpStatus.FORBIDDEN.name())
-                .timestamp(LocalDateTime.now())
-                .build();
-    }*/
-
     @ExceptionHandler({UserNotFoundException.class, CategoryNotFoundException.class,
             EventNotFoundException.class, CompilationNotFoundException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ApiError handle404Error(final RuntimeException e) {
+    public ApiError handleNotFoundError(final RuntimeException e) {
         log.error("404 - Объект не найден: {} ", e.getMessage(), e);
         return ApiError.builder()
                 .errors(e.getStackTrace())
@@ -58,7 +45,7 @@ public class ErrorHandler {
 
     @ExceptionHandler({DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ApiError handle409Error(final RuntimeException e) {
+    public ApiError handleConflictError(final RuntimeException e) {
         log.error("409 - Конфликт данных: {} ", e.getMessage(), e);
         return ApiError.builder()
                 .errors(e.getStackTrace())
@@ -71,7 +58,7 @@ public class ErrorHandler {
 
     @ExceptionHandler({Exception.class})
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ApiError handle500Error(final RuntimeException e) {
+    public ApiError handleServerError(final RuntimeException e) {
         log.error("500 - Внутренняя ошибка сервера: {} ", e.getMessage(), e);
         return ApiError.builder()
                 .errors(e.getStackTrace())
