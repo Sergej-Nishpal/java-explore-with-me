@@ -31,19 +31,21 @@ public class AnyAccessController {
     private final AnyAccessService anyAccessService;
 
     @GetMapping("/events")
-    public Collection<EventShortDto> getEvents(@RequestParam String text,
-                                               @RequestParam Set<Long> categories,
-                                               @RequestParam Boolean paid,
+    public Collection<EventShortDto> getEvents(@RequestParam(required = false) String text,
+                                               @RequestParam(required = false) Set<Long> categories,
+                                               @RequestParam(required = false) Boolean paid,
                                                @RequestParam(required = false)
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                                LocalDateTime rangeStart,
                                                @RequestParam(required = false)
                                                @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                                LocalDateTime rangeEnd,
-                                               @RequestParam(defaultValue = "false") Boolean onlyAvailable,
-                                               @RequestParam String sort,
-                                               @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                               @RequestParam(defaultValue = "10") @Positive Integer size,
+                                               @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
+                                               @RequestParam(required = false) String sort,
+                                               @RequestParam(required = false, defaultValue = "0")
+                                               @PositiveOrZero Integer from,
+                                               @RequestParam(required = false, defaultValue = "10")
+                                               @Positive Integer size,
                                                HttpServletRequest request) {
 
         final String ip = request.getRemoteAddr();
@@ -58,7 +60,7 @@ public class AnyAccessController {
                 .rangeStart(rangeStart)
                 .rangeEnd(rangeEnd)
                 .onlyAvailable(onlyAvailable)
-                .sort(sort.equals(EventSortType.EVENT_DATE.name()) ? EventSortType.EVENT_DATE : EventSortType.VIEWS)
+                .sort(sort)
                 .from(from)
                 .size(size)
                 .build();

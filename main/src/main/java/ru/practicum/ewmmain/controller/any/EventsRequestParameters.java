@@ -23,7 +23,7 @@ public class EventsRequestParameters {
     private LocalDateTime rangeStart;
     private LocalDateTime rangeEnd;
     private Boolean onlyAvailable;
-    private EventSortType sort;
+    private String sort;
     @PositiveOrZero
     private Integer from;
     @Positive

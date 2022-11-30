@@ -63,8 +63,6 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     public EventFullDto publishEvent(Long eventId) {
         final int hoursBeforeForPublish = 1;
-        // дата начала события должна быть не ранее чем за час от даты публикации.
-        // событие должно быть в состоянии ожидания публикации
         Event event = getEventWithCheck(eventId);
         if (!event.getEventDate().minusHours(hoursBeforeForPublish).isAfter(LocalDateTime.now())) {
             throw new IncorrectEventDateException(hoursBeforeForPublish);
@@ -81,7 +79,6 @@ public class AdminAccessServiceImpl implements AdminAccessService {
 
     @Override
     public EventFullDto rejectEvent(Long eventId) {
-        //событие не должно быть опубликовано
         Event event = getEventWithCheck(eventId);
 
         if (event.getState().equals(EventState.PUBLISHED)) {
@@ -95,7 +92,6 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     @Transactional
     public CategoryDto changeCategory(CategoryDto categoryDto) {
-        //имя категории должно быть уникальным
         Category category = getCategoryWithCheck(categoryDto.getId());
         category.setName(category.getName());
         return EntityMapper.toCategoryDto(categoryRepository.save(category));

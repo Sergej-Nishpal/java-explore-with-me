@@ -20,6 +20,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class StatServiceImpl implements StatService {
+    private static final String APP_NAME = "ewm-main-service";
+
     private final StatRepository statRepository;
 
     @Override
@@ -41,13 +43,13 @@ public class StatServiceImpl implements StatService {
         for (String uri : uris) {
             ViewStats viewStats;
             long counter = 0;
-            List<String> apps = new ArrayList<>();
+            //List<String> apps = new ArrayList<>();
             List<String> ips = new ArrayList<>();
             for (EndpointHit hit : endpoints) {
                 if (hit.getUri().equals(uri)) {
-                    if (!apps.contains(hit.getApp())) {
+                    /*if (!apps.contains(hit.getApp())) {
                         apps.add(hit.getApp());
-                    }
+                    }*/
 
                     if (!ips.contains(hit.getIp())) {
                         ips.add(hit.getIp());
@@ -57,7 +59,7 @@ public class StatServiceImpl implements StatService {
                 }
             }
             viewStats = ViewStats.builder()
-                    .app("ewmaaaaaa") // TODO Что тут с OutOfBoundException?
+                    .app(APP_NAME)
                     .uri(uri)
                     .hits(Boolean.TRUE.equals(unique) ? ips.size() : counter)
                     .build();
