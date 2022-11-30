@@ -2,6 +2,8 @@ package ru.practicum.ewmmain.statclient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,17 +26,18 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class StatClient {
-    private static final String STAT_URL = "http://localhost:9090";
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
     private final WebClient webClient;
 
-    public StatClient() {
-        DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(STAT_URL);
+    @Autowired
+    public StatClient(@Value("${ewm-stat.url}") String statUrl) {
+        DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(statUrl);
         factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
         webClient = WebClient
                 .builder()
                 .uriBuilderFactory(factory)
-                .baseUrl(STAT_URL)
+                .baseUrl(statUrl)
                 .build();
     }
 
