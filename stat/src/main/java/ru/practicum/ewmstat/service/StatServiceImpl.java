@@ -2,7 +2,6 @@ package ru.practicum.ewmstat.service;
 
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewmstat.model.EndpointHit;
@@ -16,7 +15,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-@Slf4j //TODO Логирование!
 @Service
 @RequiredArgsConstructor
 public class StatServiceImpl implements StatService {
@@ -43,14 +41,9 @@ public class StatServiceImpl implements StatService {
         for (String uri : uris) {
             ViewStats viewStats;
             long counter = 0;
-            //List<String> apps = new ArrayList<>();
             List<String> ips = new ArrayList<>();
             for (EndpointHit hit : endpoints) {
                 if (hit.getUri().equals(uri)) {
-                    /*if (!apps.contains(hit.getApp())) {
-                        apps.add(hit.getApp());
-                    }*/
-
                     if (!ips.contains(hit.getIp())) {
                         ips.add(hit.getIp());
                     }
