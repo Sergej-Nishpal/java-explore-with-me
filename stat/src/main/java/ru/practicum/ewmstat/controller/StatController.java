@@ -12,7 +12,7 @@ import ru.practicum.ewmstat.service.StatService;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -29,12 +29,12 @@ public class StatController {
     }
 
     @GetMapping("/stats")
-    public Collection<ViewStats> getViewStats(@RequestParam
-                                              @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
-                                              @RequestParam
-                                              @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
-                                              @RequestParam Set<String> uris,
-                                              @RequestParam(defaultValue = "false") Boolean unique) {
+    public List<ViewStats> getViewStats(@RequestParam
+                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,
+                                        @RequestParam
+                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime end,
+                                        @RequestParam Set<String> uris,
+                                        @RequestParam(defaultValue = "false") Boolean unique) {
         log.debug("Получение статистики по посещениям.");
         return statService.getViewStats(start, end, uris, unique);
     }

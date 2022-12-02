@@ -24,9 +24,9 @@ import ru.practicum.ewmmain.repository.EventRepository;
 import ru.practicum.ewmmain.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,15 +34,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdminAccessServiceImpl implements AdminAccessService {
+    private static final int ONE_HOUR_BEFORE_EVENT_DATE = 1;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final CompilationRepository compilationRepository;
 
     @Override
-    public Collection<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
-                                              Set<Long> categories, LocalDateTime rangeStart,
-                                              LocalDateTime rangeEnd, Integer from, Integer size) {
+    public List<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
+                                        Set<Long> categories, LocalDateTime rangeStart,
+                                        LocalDateTime rangeEnd, Integer from, Integer size) {
         final QEvent event = QEvent.event;
         final Predicate eventDatePredicate = rangeStart == null && rangeEnd == null
                 ? event.eventDate.after(LocalDateTime.now())
@@ -102,10 +103,9 @@ public class AdminAccessServiceImpl implements AdminAccessService {
 
     @Override
     public EventFullDto publishEvent(Long eventId) {
-        final int hoursBeforeForPublish = 1;
         Event event = getEventWithCheck(eventId);
-        if (!event.getEventDate().minusHours(hoursBeforeForPublish).isAfter(LocalDateTime.now())) {
-            throw new IncorrectEventDateException(hoursBeforeForPublish);
+        if (!event.getEventDate().minusHours(ONE_HOUR_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+            throw new IncorrectEventDateException(ONE_HOUR_BEFORE_EVENT_DATE);
         }
 
         if (!event.getState().equals(EventState.PENDING)) {
@@ -147,14 +147,14 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     @Transactional
     public void deleteCategoryById(Long catId) {
-        Category category = categoryRepository.findById(catId).orElseThrow(() -> {
+        final Category category = categoryRepository.findById(catId).orElseThrow(() -> {
             throw new CategoryNotFoundException(catId);
         });
         categoryRepository.deleteById(category.getId());
     }
 
     @Override
-    public Collection<UserDto> getUsers(Set<Long> ids, Integer from, Integer size) {
+    public List<UserDto> getUsers(Set<Long> ids, Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
         return userRepository.findAllByIdIn(ids, pageable)
                 .stream()

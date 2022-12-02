@@ -14,7 +14,7 @@ import ru.practicum.ewmmain.service.auth.AuthAccessService;
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
-import java.util.Collection;
+import java.util.List;
 
 @Slf4j
 @Validated
@@ -25,11 +25,11 @@ public class AuthAccessController {
     private final AuthAccessService authAccessService;
 
     @GetMapping("/{userId}/events")
-    public Collection<EventShortDto> getEventsCreatedByUserId(@PathVariable @Positive Long userId,
-                                                              @RequestParam(defaultValue = "0")
-                                                              @PositiveOrZero Integer from,
-                                                              @RequestParam(defaultValue = "10")
-                                                              @Positive Integer size) {
+    public List<EventShortDto> getEventsCreatedByUserId(@PathVariable @Positive Long userId,
+                                                        @RequestParam(defaultValue = "0")
+                                                        @PositiveOrZero Integer from,
+                                                        @RequestParam(defaultValue = "10")
+                                                        @Positive Integer size) {
         log.debug("Получение событий, добавленных текущим пользователем с id = {}.", userId);
         return authAccessService.getEventsCreatedByUserId(userId, from, size);
     }
@@ -63,8 +63,8 @@ public class AuthAccessController {
     }
 
     @GetMapping("/{userId}/events/{eventId}/requests")
-    Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(@PathVariable @Positive Long userId,
-                                                                          @PathVariable @Positive Long eventId) {
+    List<ParticipationRequestDto> getParticipationRequestsOfEventId(@PathVariable @Positive Long userId,
+                                                                    @PathVariable @Positive Long eventId) {
         log.debug("Получение запросов на участие в событии с id = {} пользователя с id = {}.", eventId, userId);
         return authAccessService.getParticipationRequestsOfEventId(userId, eventId);
     }
@@ -88,7 +88,7 @@ public class AuthAccessController {
     }
 
     @GetMapping("/{userId}/requests")
-    Collection<ParticipationRequestDto> getParticipationRequestsOfUserId(@PathVariable @Positive Long userId) {
+    public List<ParticipationRequestDto> getParticipationRequestsOfUserId(@PathVariable @Positive Long userId) {
         log.debug("Получение запросов на участие в событиях пользователя с id = {}.", userId);
         return authAccessService.getParticipationRequestsOfUserId(userId);
     }

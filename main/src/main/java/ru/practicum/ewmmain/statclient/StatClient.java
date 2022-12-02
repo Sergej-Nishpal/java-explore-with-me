@@ -19,7 +19,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -32,7 +32,7 @@ public class StatClient {
 
     @Autowired
     public StatClient(@Value("${ewm-stat.url}") String statUrl) {
-        DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(statUrl);
+        final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(statUrl);
         factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
         webClient = WebClient
                 .builder()
@@ -54,7 +54,7 @@ public class StatClient {
                 .block();
     }
 
-    public Collection<ViewStats> getStats(LocalDateTime start, LocalDateTime end, Set<String> uris, boolean unique) {
+    public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, Set<String> uris, boolean unique) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/stats")
@@ -63,11 +63,12 @@ public class StatClient {
                         .queryParam("uris", uris)
                         .queryParam("unique", unique)
                         .build())
+                .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .onStatus(HttpStatus::isError, response -> {
                     throw new StatClientException("Ошибка получения данных от сервера статистики!");
                 })
-                .bodyToMono(new ParameterizedTypeReference<Collection<ViewStats>>() {
+                .bodyToMono(new ParameterizedTypeReference<List<ViewStats>>() {
                 })
                 .block();
     }

@@ -5,8 +5,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewmmain.dto.*;
-import ru.practicum.ewmmain.dto.incoming.*;
+import ru.practicum.ewmmain.dto.CategoryDto;
+import ru.practicum.ewmmain.dto.CompilationDto;
+import ru.practicum.ewmmain.dto.EventFullDto;
+import ru.practicum.ewmmain.dto.UserDto;
+import ru.practicum.ewmmain.dto.incoming.AdminUpdateEventRequest;
+import ru.practicum.ewmmain.dto.incoming.NewCategoryDto;
+import ru.practicum.ewmmain.dto.incoming.NewCompilationDto;
+import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.service.admin.AdminAccessService;
 
@@ -14,7 +20,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -26,19 +32,19 @@ public class AdminAccessController {
     private final AdminAccessService adminAccessService;
 
     @GetMapping("/events")
-    public Collection<EventFullDto> getEvents(@RequestParam(required = false) Set<Long> users,
-                                              @RequestParam(required = false) Set<EventState> states,
-                                              @RequestParam(required = false) Set<Long> categories,
-                                              @RequestParam(required = false)
-                                              @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                              LocalDateTime rangeStart,
-                                              @RequestParam(required = false)
-                                              @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                              LocalDateTime rangeEnd,
-                                              @RequestParam(required = false, defaultValue = "0")
-                                              @PositiveOrZero Integer from,
-                                              @RequestParam(required = false, defaultValue = "10")
-                                              @Positive Integer size) {
+    public List<EventFullDto> getEvents(@RequestParam(required = false) Set<Long> users,
+                                        @RequestParam(required = false) Set<EventState> states,
+                                        @RequestParam(required = false) Set<Long> categories,
+                                        @RequestParam(required = false)
+                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                        LocalDateTime rangeStart,
+                                        @RequestParam(required = false)
+                                        @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                        LocalDateTime rangeEnd,
+                                        @RequestParam(required = false, defaultValue = "0")
+                                        @PositiveOrZero Integer from,
+                                        @RequestParam(required = false, defaultValue = "10")
+                                        @Positive Integer size) {
 
         log.debug("Запрос админом информации о событиях.");
         return adminAccessService.getEvents(users, states, categories, rangeStart, rangeEnd, from, size);
@@ -88,9 +94,9 @@ public class AdminAccessController {
     }
 
     @GetMapping("/users")
-    public Collection<UserDto> getUsers(@RequestParam Set<Long> ids,
-                                        @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                        @RequestParam(defaultValue = "10") @Positive Integer size) {
+    public List<UserDto> getUsers(@RequestParam Set<Long> ids,
+                                  @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                  @RequestParam(defaultValue = "10") @Positive Integer size) {
 
         log.debug("Запрос админом информации о пользователях.");
         return adminAccessService.getUsers(ids, from, size);

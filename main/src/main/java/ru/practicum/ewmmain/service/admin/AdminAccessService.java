@@ -11,12 +11,12 @@ import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
 import ru.practicum.ewmmain.model.EventState;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 public interface AdminAccessService {
-    Collection<EventFullDto> getEvents(Set<Long> users, Set<EventState> states, Set<Long> categories,
-                                       LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
+    List<EventFullDto> getEvents(Set<Long> users, Set<EventState> states, Set<Long> categories,
+                                 LocalDateTime rangeStart, LocalDateTime rangeEnd, Integer from, Integer size);
 
     EventFullDto updateEvent(Long eventId, AdminUpdateEventRequest adminUpdateEventRequest);
 
@@ -30,7 +30,7 @@ public interface AdminAccessService {
 
     void deleteCategoryById(Long catId);
 
-    Collection<UserDto> getUsers(Set<Long> ids, Integer from, Integer size);
+    List<UserDto> getUsers(Set<Long> ids, Integer from, Integer size);
 
     UserDto addUser(NewUserRequest newUserRequest);
 

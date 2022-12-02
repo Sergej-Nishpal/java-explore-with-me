@@ -19,12 +19,15 @@ import ru.practicum.ewmmain.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthAccessServiceImpl implements AuthAccessService {
+    private static final int TWO_HOURS_BEFORE_EVENT_DATE = 2;
+
     private static final String EVENT_NOT_FOUND = "Событие с id = {} не найдено!";
 
     private final UserRepository userRepository;
@@ -34,7 +37,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     private final LocationRepository locationRepository;
 
     @Override
-    public Collection<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size) {
+    public List<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
         return eventRepository.findAllByInitiatorId(userId, pageable)
                 .stream()
@@ -45,11 +48,9 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     @Override
     @Transactional
     public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
-        final int hoursBeforeForUpdateEvent = 2;
-
-        if (!request.getEventDate().minusHours(hoursBeforeForUpdateEvent).isAfter(LocalDateTime.now())) {
+        if (!request.getEventDate().minusHours(TWO_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
             log.error("Некорректная дата для обновления события!");
-            throw new IncorrectEventDateException(hoursBeforeForUpdateEvent);
+            throw new IncorrectEventDateException(TWO_HOURS_BEFORE_EVENT_DATE);
         }
 
         final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
@@ -79,11 +80,9 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     @Override
     @Transactional
     public EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto) {
-        final int hoursBeforeForAddEvent = 2;
-
-        if (!newEventDto.getEventDate().minusHours(hoursBeforeForAddEvent).isAfter(LocalDateTime.now())) {
+        if (!newEventDto.getEventDate().minusHours(TWO_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
             log.error("Некорректная дата для добавления события!");
-            throw new IncorrectEventDateException(hoursBeforeForAddEvent);
+            throw new IncorrectEventDateException(TWO_HOURS_BEFORE_EVENT_DATE);
         }
 
         final LocationDto locationDto = LocationDto.builder()
@@ -254,7 +253,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
-    public Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
+    public List<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId) {
         final User user = userRepository.findById(userId).orElseThrow(() -> {
             log.error("Пользователь с id = {} не найден!", userId);
             throw new UserNotFoundException(userId);
@@ -276,7 +275,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
-    public Collection<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId) {
+    public List<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId) {
         return requestRepository.findAllByRequesterId(userId)
                 .stream()
                 .map(EntityMapper::toParticipationRequestDto)

@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.PositiveOrZero;
 import java.time.LocalDateTime;
-import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 @Slf4j
@@ -31,22 +31,22 @@ public class AnyAccessController {
     private final AnyAccessService anyAccessService;
 
     @GetMapping("/events")
-    public Collection<EventShortDto> getEvents(@RequestParam(required = false) String text,
-                                               @RequestParam(required = false) Set<Long> categories,
-                                               @RequestParam(required = false) Boolean paid,
-                                               @RequestParam(required = false)
-                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                               LocalDateTime rangeStart,
-                                               @RequestParam(required = false)
-                                               @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-                                               LocalDateTime rangeEnd,
-                                               @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
-                                               @RequestParam(required = false) String sort,
-                                               @RequestParam(required = false, defaultValue = "0")
-                                               @PositiveOrZero Integer from,
-                                               @RequestParam(required = false, defaultValue = "10")
-                                               @Positive Integer size,
-                                               HttpServletRequest request) {
+    public List<EventShortDto> getEvents(@RequestParam(required = false) String text,
+                                         @RequestParam(required = false) Set<Long> categories,
+                                         @RequestParam(required = false) Boolean paid,
+                                         @RequestParam(required = false)
+                                         @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                         LocalDateTime rangeStart,
+                                         @RequestParam(required = false)
+                                         @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+                                         LocalDateTime rangeEnd,
+                                         @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
+                                         @RequestParam(required = false) String sort,
+                                         @RequestParam(required = false, defaultValue = "0")
+                                         @PositiveOrZero Integer from,
+                                         @RequestParam(required = false, defaultValue = "10")
+                                         @Positive Integer size,
+                                         HttpServletRequest request) {
 
         final String ip = request.getRemoteAddr();
         final String path = request.getRequestURI();
@@ -77,11 +77,11 @@ public class AnyAccessController {
     }
 
     @GetMapping("/compilations")
-    public Collection<CompilationDto> getCompilations(@RequestParam(required = false) Boolean pinned,
-                                                      @RequestParam(required = false, defaultValue = "0")
-                                                      @PositiveOrZero Integer from,
-                                                      @RequestParam(required = false, defaultValue = "10")
-                                                      @Positive Integer size) {
+    public List<CompilationDto> getCompilations(@RequestParam(required = false) Boolean pinned,
+                                                @RequestParam(required = false, defaultValue = "0")
+                                                @PositiveOrZero Integer from,
+                                                @RequestParam(required = false, defaultValue = "10")
+                                                @Positive Integer size) {
         log.debug("Получение подборок событий.");
         return anyAccessService.getCompilations(pinned, from, size);
     }
@@ -93,8 +93,8 @@ public class AnyAccessController {
     }
 
     @GetMapping("/categories")
-    public Collection<CategoryDto> getCategories(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
-                                                 @RequestParam(defaultValue = "10") @Positive Integer size) {
+    public List<CategoryDto> getCategories(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                           @RequestParam(defaultValue = "10") @Positive Integer size) {
         log.debug("Получение списка категорий.");
         return anyAccessService.getCategories(from, size);
     }

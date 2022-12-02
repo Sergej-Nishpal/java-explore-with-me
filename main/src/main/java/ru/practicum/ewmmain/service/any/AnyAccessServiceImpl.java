@@ -37,8 +37,8 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     private final StatClient statClient;
 
     @Override
-    public Collection<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
-                                               String path, String appName) {
+    public List<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
+                                         String path, String appName) {
         final LocalDateTime localDateTimeToSave = LocalDateTime.now();
         final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
                 .app(appName)
@@ -77,20 +77,18 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                                 : null)
                         .and(textPredicate));
 
-        Pageable pageable;
-        Collection<EventShortDto> eventsResult;
+        final Pageable pageable;
+        final List<EventShortDto> eventsResult;
 
         if (parameters.getSort() != null && Objects.equals(parameters.getSort(), "EVENT_DATE")) {
             pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
                     parameters.getSize(), Sort.by(EVENT_DATE_SORT));
             eventsResult = getEventShorts(parameters, predicate, pageable);
-            saveHitsOfViewedEvents(eventsResult, appName, ip, localDateTimeToSave);
             return eventsResult;
         } else {
             pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
                     parameters.getSize());
             eventsResult = getEventShorts(parameters, predicate, pageable);
-            saveHitsOfViewedEvents(eventsResult, appName, ip, localDateTimeToSave);
             return eventsResult.stream()
                     .sorted(Comparator.comparingLong(EventShortDto::getViews))
                     .collect(Collectors.toList());
@@ -100,7 +98,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     @Override
     public EventFullDto getEventById(Long eventId, String ip, String path, String appName) {
         final Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED);
-        Collection<ViewStats> stats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(),
+        final List<ViewStats> stats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(),
                 Set.of(path), false);
         long views = 0;
         for (ViewStats viewStats : stats) {
@@ -127,7 +125,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     }
 
     @Override
-    public Collection<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
+    public List<CompilationDto> getCompilations(Boolean pinned, Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
         final QCompilation compilation = QCompilation.compilation;
         final Predicate predicate = compilation.pinned.in(pinned != null
@@ -148,7 +146,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     }
 
     @Override
-    public Collection<CategoryDto> getCategories(Integer from, Integer size) {
+    public List<CategoryDto> getCategories(Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
         return categoryRepository.findAll(pageable).stream()
                 .map(EntityMapper::toCategoryDto)
@@ -164,8 +162,8 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         return EntityMapper.toCategoryDto(category);
     }
 
-    private Collection<EventShortDto> getEventShorts(EventsRequestParameters parameters,
-                                                     Predicate predicate, Pageable pageable) {
+    private List<EventShortDto> getEventShorts(EventsRequestParameters parameters,
+                                               Predicate predicate, Pageable pageable) {
         Page<Event> events = eventRepository.findAll(predicate, pageable);
         Set<String> uris = events.stream()
                 .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
@@ -179,8 +177,8 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             start = parameters.getRangeStart();
             end = parameters.getRangeEnd();
         }
-        Collection<ViewStats> viewStats = statClient.getStats(start, end, uris, false);
-        Collection<EventShortDto> eventsResult = events.stream()
+        List<ViewStats> viewStats = statClient.getStats(start, end, uris, false);
+        List<EventShortDto> eventsResult = events.stream()
                 .map(EntityMapper::toEventShortDto)
                 .collect(Collectors.toList());
         for (EventShortDto eventShortDto : eventsResult) {
@@ -192,21 +190,5 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         }
 
         return eventsResult;
-    }
-
-    private void saveHitsOfViewedEvents(Collection<EventShortDto> eventsResult, String appName,
-                                        String ip, LocalDateTime localDateTime) {
-        Set<String> uris = eventsResult.stream()
-                .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
-                .collect(Collectors.toSet());
-        for (String uri : uris) {
-            EndpointHitDto endpointHitDto = EndpointHitDto.builder()
-                    .app(appName)
-                    .uri(uri)
-                    .ip(ip)
-                    .timestamp(localDateTime)
-                    .build();
-            statClient.save(endpointHitDto);
-        }
     }
 }

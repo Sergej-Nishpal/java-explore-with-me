@@ -6,10 +6,10 @@ import ru.practicum.ewmmain.dto.ParticipationRequestDto;
 import ru.practicum.ewmmain.dto.incoming.NewEventDto;
 import ru.practicum.ewmmain.dto.incoming.UpdateEventRequest;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface AuthAccessService {
-    Collection<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size);
+    List<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size);
 
     EventFullDto updateEventByUserId(Long userId, UpdateEventRequest updateEventRequest);
 
@@ -19,13 +19,13 @@ public interface AuthAccessService {
 
     EventFullDto cancelEventByUserIdAndEventId(Long userId, Long eventId);
 
-    Collection<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId);
+    List<ParticipationRequestDto> getParticipationRequestsOfEventId(Long userId, Long eventId);
 
     ParticipationRequestDto confirmParticipationRequestOfEventId(Long userId, Long eventId, Long reqId);
 
     ParticipationRequestDto rejectParticipationRequestOfEventId(Long userId, Long eventId, Long reqId);
 
-    Collection<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId);
+    List<ParticipationRequestDto> getParticipationRequestsOfUserId(Long userId);
 
     ParticipationRequestDto addParticipationRequestsOfUserId(Long userId, Long eventId);
 
