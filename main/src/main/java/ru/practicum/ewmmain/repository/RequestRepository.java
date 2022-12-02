@@ -4,12 +4,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import ru.practicum.ewmmain.model.ParticipationRequest;
 import ru.practicum.ewmmain.model.ParticipationRequestStatus;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface RequestRepository extends JpaRepository<ParticipationRequest, Long> {
-    Collection<ParticipationRequest> findAllByEventId(long eventId);
+    List<ParticipationRequest> findAllByEventId(long eventId);
 
-    Collection<ParticipationRequest> findAllByRequesterId(long requesterId);
+    List<ParticipationRequest> findAllByRequesterId(long requesterId);
 
-    Collection<ParticipationRequest> findAllByEventIdAndStatus(long eventId, ParticipationRequestStatus status);
+    List<ParticipationRequest> findAllByEventIdAndStatus(long eventId, ParticipationRequestStatus status);
 }

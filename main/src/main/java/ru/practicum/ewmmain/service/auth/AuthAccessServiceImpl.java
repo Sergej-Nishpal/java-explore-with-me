@@ -18,7 +18,6 @@ import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -231,7 +230,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
             eventRepository.save(event);
 
             if (event.getConfirmedRequests().intValue() == event.getParticipantLimit().intValue()) {
-                final Collection<ParticipationRequest> pendingRequests = requestRepository
+                final List<ParticipationRequest> pendingRequests = requestRepository
                         .findAllByEventIdAndStatus(eventId, ParticipationRequestStatus.PENDING);
                 pendingRequests.forEach(request -> request.setStatus(ParticipationRequestStatus.REJECTED));
                 requestRepository.saveAll(pendingRequests);
