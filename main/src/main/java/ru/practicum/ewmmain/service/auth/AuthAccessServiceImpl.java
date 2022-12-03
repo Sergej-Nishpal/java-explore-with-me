@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AuthAccessServiceImpl implements AuthAccessService {
-    private static final int TWO_HOURS_BEFORE_EVENT_DATE = 2;
+    private static final int MIN_HOURS_BEFORE_EVENT_DATE = 2;
 
     private static final String EVENT_NOT_FOUND = "Событие с id = {} не найдено!";
 
@@ -47,9 +47,9 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     @Override
     @Transactional
     public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
-        if (!request.getEventDate().minusHours(TWO_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+        if (!request.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
             log.error("Некорректная дата для обновления события!");
-            throw new IncorrectEventDateException(TWO_HOURS_BEFORE_EVENT_DATE);
+            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
         }
 
         final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
@@ -79,9 +79,9 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     @Override
     @Transactional
     public EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto) {
-        if (!newEventDto.getEventDate().minusHours(TWO_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+        if (!newEventDto.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
             log.error("Некорректная дата для добавления события!");
-            throw new IncorrectEventDateException(TWO_HOURS_BEFORE_EVENT_DATE);
+            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
         }
 
         final LocationDto locationDto = LocationDto.builder()

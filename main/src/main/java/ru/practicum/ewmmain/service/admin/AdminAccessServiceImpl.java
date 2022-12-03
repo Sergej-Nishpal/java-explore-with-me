@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdminAccessServiceImpl implements AdminAccessService {
-    private static final int ONE_HOUR_BEFORE_EVENT_DATE = 1;
+    private static final int MIN_HOURS_BEFORE_EVENT_DATE = 1;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
@@ -104,8 +104,8 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     public EventFullDto publishEvent(Long eventId) {
         Event event = getEventWithCheck(eventId);
-        if (!event.getEventDate().minusHours(ONE_HOUR_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
-            throw new IncorrectEventDateException(ONE_HOUR_BEFORE_EVENT_DATE);
+        if (!event.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
         }
 
         if (!event.getState().equals(EventState.PENDING)) {
