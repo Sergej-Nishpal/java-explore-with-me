@@ -1,24 +1,24 @@
 package ru.practicum.ewmmain.controller.any;
 
 import lombok.*;
+import lombok.extern.jackson.Jacksonized;
 
 import java.time.LocalDateTime;
 import java.util.Set;
 
-@Getter
-@Setter
+@Value
 @Builder
-@ToString
-@NoArgsConstructor
-@AllArgsConstructor
+@Jacksonized
 public class EventsRequestParameters {
-    private String text;
-    private Set<Long> categoryIds;
-    private Boolean paid;
-    private LocalDateTime rangeStart;
-    private LocalDateTime rangeEnd;
-    private Boolean onlyAvailable;
-    private String sort;
-    private Integer from;
-    private Integer size;
+    String text;
+    Set<Long> categoryIds;
+    Boolean paid;
+    LocalDateTime rangeStart;
+    LocalDateTime rangeEnd;
+    Boolean onlyAvailable;
+    Float lat;
+    Float lon;
+    EventSort sort;
+    Integer from;
+    Integer size;
 }

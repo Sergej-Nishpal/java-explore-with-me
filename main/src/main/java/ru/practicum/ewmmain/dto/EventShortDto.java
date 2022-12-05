@@ -22,4 +22,5 @@ public class EventShortDto {
     Integer confirmedRequests;
     UserShortDto initiator;
     Long views;
+    Integer distanceKm;
 }

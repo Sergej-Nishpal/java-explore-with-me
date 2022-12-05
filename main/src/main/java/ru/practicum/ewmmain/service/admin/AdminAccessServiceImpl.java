@@ -3,25 +3,17 @@ package ru.practicum.ewmmain.service.admin;
 import com.querydsl.core.types.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.UserDto;
-import ru.practicum.ewmmain.dto.incoming.AdminUpdateEventRequest;
-import ru.practicum.ewmmain.dto.incoming.NewCategoryDto;
-import ru.practicum.ewmmain.dto.incoming.NewCompilationDto;
-import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
+import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.*;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
-import ru.practicum.ewmmain.repository.CategoryRepository;
-import ru.practicum.ewmmain.repository.CompilationRepository;
-import ru.practicum.ewmmain.repository.EventRepository;
-import ru.practicum.ewmmain.repository.UserRepository;
+import ru.practicum.ewmmain.repository.*;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -39,6 +31,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final CompilationRepository compilationRepository;
+    private final LocationRepository locationRepository;
 
     @Override
     public List<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
@@ -114,7 +107,13 @@ public class AdminAccessServiceImpl implements AdminAccessService {
 
         event.setState(EventState.PUBLISHED);
         event.setPublishedOn(LocalDateTime.now());
-        return EntityMapper.toEventFullDto(eventRepository.save(event));
+        final Event publishedEvent = eventRepository.save(event);
+        checkForSendingNotifications(publishedEvent);
+        return EntityMapper.toEventFullDto(publishedEvent);
+    }
+
+    private void checkForSendingNotifications(Event publishedEvent) {
+
     }
 
     @Override
@@ -156,16 +155,37 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     @Override
     public List<UserDto> getUsers(Set<Long> ids, Integer from, Integer size) {
         final Pageable pageable = PageRequest.of(from / size, size);
-        return userRepository.findAllByIdIn(ids, pageable)
-                .stream()
+        final Page<User> users;
+        if (ids == null || ids.isEmpty()) {
+            users = userRepository.findAll(pageable);
+        } else {
+            users = userRepository.findAllByIdIn(ids, pageable);
+        }
+
+        return users.stream()
                 .map(EntityMapper::toUserDto)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * @param newUserRequest Входящие данные нового пользователя (могут быть с координатами или без)
+     * @return UserDto
+     */
     @Override
     @Transactional
     public UserDto addUser(NewUserRequest newUserRequest) {
-        final User user = userRepository.save(EntityMapper.toUser(newUserRequest));
+        Location userLocation = null;
+        if (newUserRequest.getLat() != null && newUserRequest.getLon() != null) {
+            userLocation = Location.builder()
+                    .type(LocationType.PRIVATE)
+                    .description(newUserRequest.getName() + "\n" + newUserRequest.getEmail())
+                    .lat(newUserRequest.getLat())
+                    .lon(newUserRequest.getLon())
+                    .createdOn(LocalDateTime.now())
+                    .build();
+            locationRepository.save(userLocation);
+        }
+        final User user = userRepository.save(EntityMapper.toUser(newUserRequest, userLocation));
         return EntityMapper.toUserDto(user);
     }
 
@@ -230,6 +250,15 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         Compilation compilation = getCompilationWithCheck(compId);
         compilation.setPinned(true);
         compilationRepository.save(compilation);
+    }
+
+    @Override
+    public List<LocationFullDto> getLocations(Integer from, Integer size) {
+        final Pageable pageable = PageRequest.of(from / size, size);
+        return locationRepository.findAll(pageable)
+                .stream()
+                .map(EntityMapper::toLocationFullDto)
+                .collect(Collectors.toList());
     }
 
     private Category getCategoryWithCheck(long categoryId) {

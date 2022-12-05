@@ -40,8 +40,11 @@ public class AnyAccessController {
                                          @RequestParam(required = false)
                                          @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                          LocalDateTime rangeEnd,
-                                         @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
-                                         @RequestParam(required = false) String sort,
+                                         @RequestParam(required = false, defaultValue = "false")
+                                         Boolean onlyAvailable,
+                                         @RequestParam(required = false) Float lat,
+                                         @RequestParam(required = false) Float lon,
+                                         @RequestParam(required = false) EventSort sort,
                                          @RequestParam(required = false, defaultValue = "0")
                                          @PositiveOrZero Integer from,
                                          @RequestParam(required = false, defaultValue = "10")
@@ -60,6 +63,8 @@ public class AnyAccessController {
                 .rangeStart(rangeStart)
                 .rangeEnd(rangeEnd)
                 .onlyAvailable(onlyAvailable)
+                .lat(lat)
+                .lon(lon)
                 .sort(sort)
                 .from(from)
                 .size(size)

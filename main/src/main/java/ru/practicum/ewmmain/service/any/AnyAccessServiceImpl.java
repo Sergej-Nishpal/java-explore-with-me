@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.ewmmain.controller.any.EventSort;
 import ru.practicum.ewmmain.controller.any.EventsRequestParameters;
 import ru.practicum.ewmmain.dto.*;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
@@ -28,7 +29,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AnyAccessServiceImpl implements AnyAccessService {
-    private static final String EVENT_DATE_SORT = "eventDate";
     private static final String EVENTS_PATH = "events";
 
     private final EventRepository eventRepository;
@@ -55,18 +55,19 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             textPredicate = event.annotation.containsIgnoreCase(parameters.getText()).or(event.description
                     .containsIgnoreCase(parameters.getText()));
         } else {
-            textPredicate = event.annotation.containsIgnoreCase("").or(event.description
-                    .containsIgnoreCase(""));
+            textPredicate = event.annotation.isNotEmpty()
+                    .or(event.description.isNotEmpty());
         }
 
         final Predicate eventDatePredicate = parameters.getRangeStart() == null && parameters.getRangeEnd() == null
                 ? event.eventDate.after(LocalDateTime.now())
                 : event.eventDate.between(parameters.getRangeStart(), parameters.getRangeEnd());
 
-        final Predicate predicate = event.category.id.in(
-                        parameters.getCategoryIds() != null
-                                ? parameters.getCategoryIds()
-                                : Collections.emptySet())
+        final Predicate predicate = event.category.id.in(parameters.getCategoryIds() != null
+                        ? parameters.getCategoryIds()
+                        : categoryRepository.findAll().stream()
+                        .map(Category::getId)
+                        .collect(Collectors.toSet()))
                 .and(event.paid.in(parameters.getPaid() != null
                                 ? Set.of(parameters.getPaid())
                                 : Set.of(Boolean.TRUE, Boolean.FALSE))
@@ -79,32 +80,41 @@ public class AnyAccessServiceImpl implements AnyAccessService {
 
         final Pageable pageable;
         final List<EventShortDto> eventsResult;
+        final int from = parameters.getFrom();
+        final int size = parameters.getSize();
 
-        if (parameters.getSort() != null && Objects.equals(parameters.getSort(), "EVENT_DATE")) {
-            pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
-                    parameters.getSize(), Sort.by(EVENT_DATE_SORT));
-            eventsResult = getEventShorts(parameters, predicate, pageable);
-            return eventsResult;
-        } else {
-            pageable = PageRequest.of(parameters.getFrom() / parameters.getSize(),
-                    parameters.getSize());
-            eventsResult = getEventShorts(parameters, predicate, pageable);
-            return eventsResult.stream()
-                    .sorted(Comparator.comparingLong(EventShortDto::getViews))
+        if (parameters.getSort() != null && parameters.getSort().equals(EventSort.EVENT_DATE)) {
+            pageable = PageRequest.of( from / size, size, Sort.by(EventSort.EVENT_DATE.toString()));
+            return eventRepository.findAll(predicate, pageable).stream()
+                    .map(EntityMapper::toEventShortDto)
                     .collect(Collectors.toList());
+        } /*else if (parameters.getLat() != null
+                && parameters.getLon() != null
+                && parameters.getSort() != null
+                && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
+
+
+        }*/ else {
+            pageable = PageRequest.of(from / size, size);
+            eventsResult = getEventShortsWithViewsSorted(predicate, pageable);
+            return eventsResult;
         }
     }
 
     @Override
     public EventFullDto getEventById(Long eventId, String ip, String path, String appName) {
         final Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED);
-        final List<ViewStats> stats = statClient.getStats(LocalDateTime.now().minusYears(1), LocalDateTime.now(),
+        LocalDateTime startDate = eventRepository
+                .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll())).getCreatedOn();
+        final List<ViewStats> viewStats = statClient.getStats(startDate, LocalDateTime.now(),
                 Set.of(path), false);
         long views = 0;
-        for (ViewStats viewStats : stats) {
-            if (viewStats.getUri().equals(path)) {
-                views = viewStats.getHits();
-                break;
+        if (!viewStats.isEmpty()) {
+            for (ViewStats viewStat : viewStats) {
+                if (viewStat.getUri().equals(path)) {
+                    views = viewStat.getHits();
+                    break;
+                }
             }
         }
 
@@ -162,33 +172,37 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         return EntityMapper.toCategoryDto(category);
     }
 
-    private List<EventShortDto> getEventShorts(EventsRequestParameters parameters,
-                                               Predicate predicate, Pageable pageable) {
+    private List<EventShortDto> getEventShortsWithViewsSorted(Predicate predicate, Pageable pageable) {
         Page<Event> events = eventRepository.findAll(predicate, pageable);
         Set<String> uris = events.stream()
                 .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
                 .collect(Collectors.toSet());
-        final LocalDateTime start;
-        final LocalDateTime end;
-        if (parameters.getRangeStart() == null && parameters.getRangeEnd() == null) {
-            start = LocalDateTime.now().minusYears(1);
-            end = LocalDateTime.now();
+        if (!events.isEmpty()) {
+            final LocalDateTime startDate = eventRepository
+                    .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll()))
+                    .getCreatedOn();
+            final LocalDateTime endDate = LocalDateTime.now();
+            List<EventShortDto> eventsResult = events.stream()
+                    .map(EntityMapper::toEventShortDto)
+                    .collect(Collectors.toList());
+            List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
+            return checkViewsAndSort(eventsResult, viewStats);
         } else {
-            start = parameters.getRangeStart();
-            end = parameters.getRangeEnd();
+            return Collections.emptyList();
         }
-        List<ViewStats> viewStats = statClient.getStats(start, end, uris, false);
-        List<EventShortDto> eventsResult = events.stream()
-                .map(EntityMapper::toEventShortDto)
-                .collect(Collectors.toList());
-        for (EventShortDto eventShortDto : eventsResult) {
-            for (ViewStats view : viewStats) {
-                if (view.getUri().contains(eventShortDto.getId().toString())) {
-                    eventShortDto.setViews(view.getHits());
+    }
+
+    private List<EventShortDto> checkViewsAndSort(List<EventShortDto> eventsResult, List<ViewStats> viewStats) {
+        if (!viewStats.isEmpty()) {
+            for (EventShortDto eventShortDto : eventsResult) {
+                for (ViewStats views : viewStats) {
+                    if (views.getUri().contains(eventShortDto.getId().toString())) {
+                        eventShortDto.setViews(views.getHits());
+                    }
                 }
             }
+            eventsResult.sort(Comparator.comparing(EventShortDto::getViews).reversed());
         }
-
         return eventsResult;
     }
 }

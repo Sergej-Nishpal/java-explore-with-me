@@ -5,14 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.UserDto;
-import ru.practicum.ewmmain.dto.incoming.AdminUpdateEventRequest;
-import ru.practicum.ewmmain.dto.incoming.NewCategoryDto;
-import ru.practicum.ewmmain.dto.incoming.NewCompilationDto;
-import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
+import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.*;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.service.admin.AdminAccessService;
 
@@ -94,7 +88,7 @@ public class AdminAccessController {
     }
 
     @GetMapping("/users")
-    public List<UserDto> getUsers(@RequestParam Set<Long> ids,
+    public List<UserDto> getUsers(@RequestParam(required = false) Set<Long> ids,
                                   @RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
                                   @RequestParam(defaultValue = "10") @Positive Integer size) {
 
@@ -159,4 +153,34 @@ public class AdminAccessController {
         log.debug("Закрепление админом подборки с id = {}.", compId);
         adminAccessService.pinCompilationById(compId);
     }
+
+    @GetMapping("/locations")
+    public List<LocationFullDto> getLocations(@RequestParam(defaultValue = "0") @PositiveOrZero Integer from,
+                                              @RequestParam(defaultValue = "10") @Positive Integer size) {
+
+        log.debug("Запрос админом всех локаций из БД.");
+        return adminAccessService.getLocations(from, size);
+    }
+
+    /*@PostMapping("/locations")
+    public UserDto addLocation(@RequestBody @Valid LocationDto locationDto) {
+
+        log.debug("Добавление админом локации с описанием \"{}\".", locationDto.getDescription());
+        return adminAccessService.addLocation(locationDto);
+    }
+
+    @PatchMapping("/locations/{locId}")
+    public CategoryDto changeLocation(@PathVariable @Positive Long locId,
+                                      @RequestBody @Valid LocationDto locationDto) {
+
+        log.debug("Изменение админом локации с id = {}.", locId);
+        return adminAccessService.changeLocation(locationDto);
+    }
+
+    @DeleteMapping("/locations/{locId}")
+    public void deleteLocation(@PathVariable @Positive Long locId) {
+
+        log.debug("Удаление админом локации с id = {}.", locId);
+        adminAccessService.deleteLocation(locId);
+    }*/
 }

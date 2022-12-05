@@ -6,6 +6,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import ru.practicum.ewmmain.dto.EventFullDto;
 import ru.practicum.ewmmain.dto.EventShortDto;
 import ru.practicum.ewmmain.dto.ParticipationRequestDto;
@@ -17,6 +19,7 @@ import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
 
+import javax.validation.constraints.Positive;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -85,6 +88,12 @@ public class AuthAccessServiceImpl implements AuthAccessService {
         }
 
         final LocationDto locationDto = LocationDto.builder()
+                .type(newEventDto.getLocation().getType() != null
+                        ? newEventDto.getLocation().getType()
+                        : LocationType.OTHER)
+                .description(newEventDto.getLocation().getDescription() != null
+                        ? newEventDto.getLocation().getDescription()
+                        : "Some description")
                 .lat(newEventDto.getLocation().getLat())
                 .lon(newEventDto.getLocation().getLon())
                 .build();
@@ -280,6 +289,13 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                 .map(EntityMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());
     }
+
+    /*@DeleteMapping("/locations/{userId}")
+    public void deleteLocationByUserId(@PathVariable @Positive Long userId) {
+
+        log.debug("Удаление пользователем с id = {} своей локации.", userId);
+        authAccessService.deleteLocationByUserId(userId);
+    }*/
 
     private Event getEventToUpdate(UpdateEventRequest request, Event savedEvent) {
         return Event.builder()
