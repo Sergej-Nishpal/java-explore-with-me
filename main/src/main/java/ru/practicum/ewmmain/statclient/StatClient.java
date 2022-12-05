@@ -65,7 +65,7 @@ public class StatClient {
                         .build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> {
+                .onStatus(HttpStatus::is5xxServerError, response -> {
                     throw new StatClientException("Ошибка получения данных от сервера статистики!");
                 })
                 .bodyToMono(new ParameterizedTypeReference<List<ViewStats>>() {

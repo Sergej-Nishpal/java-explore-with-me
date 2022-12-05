@@ -7,6 +7,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewmmain.dto.*;
 import ru.practicum.ewmmain.dto.incoming.*;
+import ru.practicum.ewmmain.exception.Marker;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.service.admin.AdminAccessService;
 
@@ -163,6 +164,7 @@ public class AdminAccessController {
     }
 
     /*@PostMapping("/locations")
+    @Validated({Marker.AdminLocation.class})
     public UserDto addLocation(@RequestBody @Valid LocationDto locationDto) {
 
         log.debug("Добавление админом локации с описанием \"{}\".", locationDto.getDescription());
@@ -170,6 +172,7 @@ public class AdminAccessController {
     }
 
     @PatchMapping("/locations/{locId}")
+    @Validated({Marker.AdminLocation.class})
     public CategoryDto changeLocation(@PathVariable @Positive Long locId,
                                       @RequestBody @Valid LocationDto locationDto) {
 

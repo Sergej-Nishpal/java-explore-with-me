@@ -1,14 +1,11 @@
 package ru.practicum.ewmmain.dto.incoming;
 
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import ru.practicum.ewmmain.exception.Marker;
 import ru.practicum.ewmmain.model.LocationType;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 
 @Value
@@ -16,8 +13,10 @@ import javax.validation.constraints.NotNull;
 @Jacksonized
 public class LocationDto {
 
+    @NotNull(groups = Marker.AdminLocation.class)
     LocationType type;
 
+    @NotNull(groups = Marker.AdminLocation.class)
     String description;
 
     @NotNull

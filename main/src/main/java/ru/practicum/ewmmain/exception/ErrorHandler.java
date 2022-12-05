@@ -7,6 +7,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.reactive.function.client.WebClientRequestException;
 
 import javax.validation.ConstraintViolationException;
 import java.time.LocalDateTime;
@@ -65,6 +66,19 @@ public class ErrorHandler {
                 .message(e.getMessage())
                 .reason("Error occurred.")
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @ExceptionHandler({WebClientRequestException.class})
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    public ApiError handleServiceError(final RuntimeException e) {
+        log.error("503 - Требуемый сервис недоступен: {} ", e.getMessage(), e);
+        return ApiError.builder()
+                .errors(e.getStackTrace())
+                .message(e.getMessage())
+                .reason("One of services unavailable.")
+                .status(HttpStatus.SERVICE_UNAVAILABLE.name())
                 .timestamp(LocalDateTime.now())
                 .build();
     }

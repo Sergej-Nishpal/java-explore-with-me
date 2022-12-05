@@ -1,6 +1,10 @@
 package ru.practicum.ewmmain.service.any;
 
 import com.querydsl.core.types.Predicate;
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,6 +25,7 @@ import ru.practicum.ewmmain.repository.CompilationRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
 import ru.practicum.ewmmain.statclient.StatClient;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,6 +40,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     private final CompilationRepository compilationRepository;
     private final CategoryRepository categoryRepository;
     private final StatClient statClient;
+    private final EntityManager entityManager;
 
     @Override
     public List<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
@@ -88,13 +94,32 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             return eventRepository.findAll(predicate, pageable).stream()
                     .map(EntityMapper::toEventShortDto)
                     .collect(Collectors.toList());
-        } /*else if (parameters.getLat() != null
+        } else if (parameters.getLat() != null
                 && parameters.getLon() != null
                 && parameters.getSort() != null
                 && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
+            //pageable = PageRequest.of( from / size, size, Sort.by(EventSort.DISTANCE_KM.toString()));
+            float lat = parameters.getLat();
+            float lon = parameters.getLon();
+            QEvent qevent = QEvent.event;
+            final NumberExpression<Float> distKm = Expressions
+                    .numberTemplate(Float.class,
+                            "distance({0}, {1}, {2}, {3})",
+                            lat, lon, qevent.location.lat, qevent.location.lon);
+            final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
+
+            return queryFactory.select(Projections
+                            .constructor(EventLocDto.class, qevent.id, qevent.title, qevent.annotation,
+                                    qevent.category, qevent.paid, qevent.eventDate, qevent.confirmedRequests,
+                                    qevent.initiator, distKm))
+                    .from(qevent)
+                    .fetch()
+                    .stream()
+                    .map(EntityMapper::toEventShortDtoFromLoc)
+                    .collect(Collectors.toList());
 
 
-        }*/ else {
+        } else {
             pageable = PageRequest.of(from / size, size);
             eventsResult = getEventShortsWithViewsSorted(predicate, pageable);
             return eventsResult;

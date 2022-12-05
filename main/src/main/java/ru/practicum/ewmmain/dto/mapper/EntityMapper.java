@@ -29,6 +29,20 @@ public class EntityMapper {
                 .build();
     }
 
+    public static EventShortDto toEventShortDtoFromLoc(EventLocDto eventLocDto) {
+        return EventShortDto.builder()
+                .id(eventLocDto.getId())
+                .title(eventLocDto.getTitle())
+                .annotation(eventLocDto.getAnnotation())
+                .category(EntityMapper.toCategoryDto(eventLocDto.getCategory()))
+                .paid(eventLocDto.getPaid())
+                .eventDate(eventLocDto.getEventDate())
+                .confirmedRequests(eventLocDto.getConfirmedRequests())
+                .initiator(EntityMapper.toUserShortDto(eventLocDto.getInitiator()))
+                .distanceKm(eventLocDto.getDistanceKm())
+                .build();
+    }
+
     public static EventFullDto toEventFullDto(Event event) {
         return EventFullDto.builder()
                 .id(event.getId())

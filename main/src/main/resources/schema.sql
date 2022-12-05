@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS events_compilations
     CONSTRAINT fk_between_compilation_id FOREIGN KEY (compilation_id) REFERENCES compilations (id)
 );
 
-CREATE OR REPLACE FUNCTION distance_km (lat1 float, lon1 float, lat2 float, lon2 float)
+CREATE OR REPLACE FUNCTION distance (lat1 float, lon1 float, lat2 float, lon2 float)
     RETURNS float
 AS
 '
