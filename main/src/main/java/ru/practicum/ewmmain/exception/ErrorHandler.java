@@ -44,6 +44,19 @@ public class ErrorHandler {
                 .build();
     }
 
+    @ExceptionHandler({EventStateException.class})
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiError handleForbiddenError(final RuntimeException e) {
+        log.error("403 - Запрещено: {} ", e.getMessage(), e);
+        return ApiError.builder()
+                .errors(e.getStackTrace())
+                .message(e.getMessage())
+                .reason("Only published events can be requested.")
+                .status(HttpStatus.FORBIDDEN.name())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     @ExceptionHandler({DataIntegrityViolationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handleConflictError(final RuntimeException e) {

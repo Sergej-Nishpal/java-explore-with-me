@@ -39,7 +39,7 @@ public class EntityMapper {
                 .eventDate(eventLocDto.getEventDate())
                 .confirmedRequests(eventLocDto.getConfirmedRequests())
                 .initiator(EntityMapper.toUserShortDto(eventLocDto.getInitiator()))
-                .distanceKm(eventLocDto.getDistanceKm())
+                .distanceKilometer(eventLocDto.getDistanceKm())
                 .build();
     }
 
@@ -60,6 +60,7 @@ public class EntityMapper {
                 .state(event.getState())
                 .publishedOn(event.getPublishedOn())
                 .confirmedRequests(event.getConfirmedRequests())
+                .views(0L)
                 .build();
     }
 

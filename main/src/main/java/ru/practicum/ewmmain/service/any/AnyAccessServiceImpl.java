@@ -19,6 +19,8 @@ import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.CategoryNotFoundException;
 import ru.practicum.ewmmain.exception.CompilationNotFoundException;
+import ru.practicum.ewmmain.exception.EventNotFoundException;
+import ru.practicum.ewmmain.exception.EventStateException;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.CategoryRepository;
 import ru.practicum.ewmmain.repository.CompilationRepository;
@@ -98,26 +100,30 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                 && parameters.getLon() != null
                 && parameters.getSort() != null
                 && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
-            //pageable = PageRequest.of( from / size, size, Sort.by(EventSort.DISTANCE_KM.toString()));
+            pageable = PageRequest.of( from / size, size);
             float lat = parameters.getLat();
             float lon = parameters.getLon();
             QEvent qevent = QEvent.event;
-            final NumberExpression<Float> distKm = Expressions
+            final NumberExpression<Float> distanceKilometer = Expressions
                     .numberTemplate(Float.class,
                             "distance({0}, {1}, {2}, {3})",
                             lat, lon, qevent.location.lat, qevent.location.lon);
             final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
 
-            return queryFactory.select(Projections
+            List<EventShortDto> eventResult =  queryFactory.select(Projections
                             .constructor(EventLocDto.class, qevent.id, qevent.title, qevent.annotation,
                                     qevent.category, qevent.paid, qevent.eventDate, qevent.confirmedRequests,
-                                    qevent.initiator, distKm))
+                                    qevent.initiator, distanceKilometer))
                     .from(qevent)
+                    .offset(pageable.getOffset())
+                    .limit(pageable.getPageSize())
                     .fetch()
                     .stream()
                     .map(EntityMapper::toEventShortDtoFromLoc)
+                    .sorted(Comparator.comparing(EventShortDto::getDistanceKilometer))
                     .collect(Collectors.toList());
 
+            return getEventShortsWithViews(eventResult);
 
         } else {
             pageable = PageRequest.of(from / size, size);
@@ -128,25 +134,32 @@ public class AnyAccessServiceImpl implements AnyAccessService {
 
     @Override
     public EventFullDto getEventById(Long eventId, String ip, String path, String appName) {
-        final Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED);
-        LocalDateTime startDate = eventRepository
-                .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll())).getCreatedOn();
-        final List<ViewStats> viewStats = statClient.getStats(startDate, LocalDateTime.now(),
-                Set.of(path), false);
-        long views = 0;
-        if (!viewStats.isEmpty()) {
-            for (ViewStats viewStat : viewStats) {
-                if (viewStat.getUri().equals(path)) {
-                    views = viewStat.getHits();
-                    break;
+        final Event event = eventRepository.findById(eventId).orElseThrow(() -> {
+            log.error("Событие с id = {} не найдено!", eventId);
+            throw new EventNotFoundException(eventId);
+        });
+        if (event.getState().equals(EventState.PUBLISHED)) {
+            EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
+            LocalDateTime startDate = eventRepository
+                    .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll())).getCreatedOn();
+            final List<ViewStats> viewStats = statClient.getStats(startDate, LocalDateTime.now(),
+                    Set.of(path), false);
+            long views = 0;
+            if (!viewStats.isEmpty()) {
+                for (ViewStats viewStat : viewStats) {
+                    if (viewStat.getUri().equals(path)) {
+                        views = viewStat.getHits();
+                        break;
+                    }
                 }
+                eventFullDto.setViews(views);
             }
+            saveHitOfViewedEvent(eventFullDto.getId(), appName, ip);
+            return eventFullDto;
+        } else {
+            log.error("Событие с id = {} не опубликовано!", eventId);
+            throw new EventStateException(String.format("Событие с id = %d не опубликовано!", eventId));
         }
-
-        EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
-        eventFullDto.setViews(views);
-        saveHitOfViewedEvent(eventFullDto.getId(), appName, ip);
-        return eventFullDto;
     }
 
     private void saveHitOfViewedEvent(long eventId, String appName, String ip) {
@@ -197,6 +210,20 @@ public class AnyAccessServiceImpl implements AnyAccessService {
         return EntityMapper.toCategoryDto(category);
     }
 
+    private List<EventShortDto> getEventShortsWithViews(List<EventShortDto> incomingList) {
+        Set<String> uris = incomingList.stream()
+                .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
+                .collect(Collectors.toSet());
+        final LocalDateTime startDate = eventRepository
+                .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll()))
+                .getCreatedOn();
+        final LocalDateTime endDate = LocalDateTime.now();
+        List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
+        List<EventShortDto> eventsResultWithViews = checkAndSetViews(incomingList, viewStats);
+        eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getDistanceKilometer));
+        return eventsResultWithViews;
+    }
+
     private List<EventShortDto> getEventShortsWithViewsSorted(Predicate predicate, Pageable pageable) {
         Page<Event> events = eventRepository.findAll(predicate, pageable);
         Set<String> uris = events.stream()
@@ -211,13 +238,15 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                     .map(EntityMapper::toEventShortDto)
                     .collect(Collectors.toList());
             List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
-            return checkViewsAndSort(eventsResult, viewStats);
+            List<EventShortDto> eventsResultWithViews = checkAndSetViews(eventsResult, viewStats);
+            eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getViews).reversed());
+            return eventsResultWithViews;
         } else {
             return Collections.emptyList();
         }
     }
 
-    private List<EventShortDto> checkViewsAndSort(List<EventShortDto> eventsResult, List<ViewStats> viewStats) {
+    private List<EventShortDto> checkAndSetViews(List<EventShortDto> eventsResult, List<ViewStats> viewStats) {
         if (!viewStats.isEmpty()) {
             for (EventShortDto eventShortDto : eventsResult) {
                 for (ViewStats views : viewStats) {
@@ -225,8 +254,10 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                         eventShortDto.setViews(views.getHits());
                     }
                 }
+                if (eventShortDto.getViews() == null) {
+                    eventShortDto.setViews(0L);
+                }
             }
-            eventsResult.sort(Comparator.comparing(EventShortDto::getViews).reversed());
         }
         return eventsResult;
     }

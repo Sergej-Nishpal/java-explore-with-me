@@ -22,5 +22,5 @@ public class EventShortDto {
     Integer confirmedRequests;
     UserShortDto initiator;
     Long views;
-    Float distanceKm;
+    Float distanceKilometer;
 }

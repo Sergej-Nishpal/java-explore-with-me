@@ -3,7 +3,7 @@ package ru.practicum.ewmmain.dto.incoming;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
-import ru.practicum.ewmmain.exception.Marker;
+import ru.practicum.ewmmain.validation.Marker;
 import ru.practicum.ewmmain.model.LocationType;
 
 import javax.validation.constraints.NotNull;
