@@ -16,6 +16,7 @@ import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
+import ru.practicum.ewmmain.service.EventsUtility;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     private final EventRepository eventRepository;
     private final RequestRepository requestRepository;
     private final LocationRepository locationRepository;
+    private final EventsUtility eventsUtility;
 
     @Override
     public List<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size) {
@@ -45,35 +47,26 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
-    @Transactional
-    public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
-        if (!request.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
-            log.error("Некорректная дата для обновления события!");
-            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
-        }
-
-        final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
-
-        final Event eventToUpdate;
-
-        if (savedEvent != null) {
-            if (savedEvent.getState().equals(EventState.PUBLISHED)) {
-                log.error("Попытка изменить опубликованное событие!");
-                throw new IncorrectEventStateException("Изменить можно только отмененные события или " +
-                        "события в состоянии ожидания модерации!");
-            }
-
-            if (savedEvent.getState().equals(EventState.CANCELED)) {
-                savedEvent.setState(EventState.PENDING);
-            }
-
-            eventToUpdate = getEventToUpdate(request, savedEvent);
+    public List<EventShortDto> getEventsNearMe(Long userId, Float radiusKm, Integer from, Integer size) {
+        final User user = userRepository.findById(userId).orElseThrow(() -> {
+            throw new UserNotFoundException(userId);
+        });
+        final Location userLocation;
+        if (user.getLocationId() != null) {
+            userLocation = locationRepository.findById(user.getLocationId()).orElseThrow(() -> {
+                throw new LocationNotFoundException(String.format("Локация с id = %d не найдена!",
+                        user.getLocationId()));
+            });
         } else {
-            log.error(EVENT_NOT_FOUND, request.getEventId());
-            throw new EventNotFoundException(request.getEventId());
+            throw new LocationNotFoundException(String.format("Пользователь с id = %d " +
+                    "не указал свою локацию при регистрации!", userId));
         }
 
-        return EntityMapper.toEventFullDto(eventRepository.save(eventToUpdate));
+        final float lat = userLocation.getLat();
+        final float lon = userLocation.getLon();
+        final Pageable pageable = PageRequest.of(from / size, size);
+        final List<EventShortDto> eventsResult = eventsUtility.getNearEvents(lat, lon, radiusKm, pageable);
+        return eventsUtility.addViewsAndSortEventShortDtoList(eventsResult);
     }
 
     @Override
@@ -108,6 +101,36 @@ public class AuthAccessServiceImpl implements AuthAccessService {
 
         final Event event = EntityMapper.toEvent(newEventDto, category, location, initiator);
         return EntityMapper.toEventFullDto(eventRepository.save(event));
+    }
+
+    @Override
+    @Transactional
+    public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
+        if (!request.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+            log.error("Некорректная дата для обновления события!");
+            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
+        }
+
+        final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
+        final Event eventToUpdate;
+        if (savedEvent != null) {
+            if (savedEvent.getState().equals(EventState.PUBLISHED)) {
+                log.error("Попытка изменить опубликованное событие!");
+                throw new IncorrectEventStateException("Изменить можно только отмененные события или " +
+                        "события в состоянии ожидания модерации!");
+            }
+
+            if (savedEvent.getState().equals(EventState.CANCELED)) {
+                savedEvent.setState(EventState.PENDING);
+            }
+
+            eventToUpdate = getEventToUpdate(request, savedEvent);
+        } else {
+            log.error(EVENT_NOT_FOUND, request.getEventId());
+            throw new EventNotFoundException(request.getEventId());
+        }
+
+        return EntityMapper.toEventFullDto(eventRepository.save(eventToUpdate));
     }
 
     @Override
@@ -286,13 +309,6 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                 .map(EntityMapper::toParticipationRequestDto)
                 .collect(Collectors.toList());
     }
-
-    /*@DeleteMapping("/locations/{userId}")
-    public void deleteLocationByUserId(@PathVariable @Positive Long userId) {
-
-        log.debug("Удаление пользователем с id = {} своей локации.", userId);
-        authAccessService.deleteLocationByUserId(userId);
-    }*/
 
     private Event getEventToUpdate(UpdateEventRequest request, Event savedEvent) {
         return Event.builder()

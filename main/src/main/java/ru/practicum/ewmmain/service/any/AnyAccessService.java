@@ -1,15 +1,15 @@
 package ru.practicum.ewmmain.service.any;
 
 import ru.practicum.ewmmain.controller.any.EventsRequestParameters;
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.EventShortDto;
+import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.GeoData;
 
 import java.util.List;
 
 public interface AnyAccessService {
-    List<EventShortDto> getEvents(EventsRequestParameters parameters, String ip, String path, String appName);
+    List<EventShortDto> getEvents(EventsRequestParameters parameters, EndpointHitDto endpointHitDto);
+
+    List<EventShortDto> getEventsNearLocation(GeoData geoData, Integer from, Integer size, EndpointHitDto endpointHitDto);
 
     EventFullDto getEventById(Long eventId, String ip, String path, String appName);
 

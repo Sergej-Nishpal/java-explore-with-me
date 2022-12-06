@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @Jacksonized
 public class LocationFullDto {
+    Long id;
     LocationType type;
     String description;
     Float lat;

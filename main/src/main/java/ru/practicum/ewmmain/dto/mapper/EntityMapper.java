@@ -150,6 +150,7 @@ public class EntityMapper {
 
     public static LocationFullDto toLocationFullDto(Location location) {
         return LocationFullDto.builder()
+                .id(location.getId())
                 .type(location.getType())
                 .description(location.getDescription())
                 .lat(location.getLat())

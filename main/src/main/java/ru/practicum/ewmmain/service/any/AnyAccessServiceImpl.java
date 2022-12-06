@@ -1,10 +1,6 @@
 package ru.practicum.ewmmain.service.any;
 
 import com.querydsl.core.types.Predicate;
-import com.querydsl.core.types.Projections;
-import com.querydsl.core.types.dsl.Expressions;
-import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -15,6 +11,7 @@ import org.springframework.stereotype.Service;
 import ru.practicum.ewmmain.controller.any.EventSort;
 import ru.practicum.ewmmain.controller.any.EventsRequestParameters;
 import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.GeoData;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.CategoryNotFoundException;
@@ -25,9 +22,9 @@ import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.CategoryRepository;
 import ru.practicum.ewmmain.repository.CompilationRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
+import ru.practicum.ewmmain.service.EventsUtility;
 import ru.practicum.ewmmain.statclient.StatClient;
 
-import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -36,28 +33,16 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AnyAccessServiceImpl implements AnyAccessService {
-    private static final String EVENTS_PATH = "events";
-
     private final EventRepository eventRepository;
     private final CompilationRepository compilationRepository;
     private final CategoryRepository categoryRepository;
     private final StatClient statClient;
-    private final EntityManager entityManager;
+    private final EventsUtility eventsUtility;
 
     @Override
-    public List<EventShortDto> getEvents(EventsRequestParameters parameters, String ip,
-                                         String path, String appName) {
-        final LocalDateTime localDateTimeToSave = LocalDateTime.now();
-        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
-                .app(appName)
-                .uri(path)
-                .ip(ip)
-                .timestamp(localDateTimeToSave)
-                .build();
-
+    public List<EventShortDto> getEvents(EventsRequestParameters parameters, EndpointHitDto endpointHitDto) {
         statClient.save(endpointHitDto);
         final QEvent event = QEvent.event;
-
         final Predicate textPredicate;
         if (parameters.getText() != null) {
             textPredicate = event.annotation.containsIgnoreCase(parameters.getText()).or(event.description
@@ -87,49 +72,42 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                         .and(textPredicate));
 
         final Pageable pageable;
-        final List<EventShortDto> eventsResult;
         final int from = parameters.getFrom();
         final int size = parameters.getSize();
 
         if (parameters.getSort() != null && parameters.getSort().equals(EventSort.EVENT_DATE)) {
-            pageable = PageRequest.of( from / size, size, Sort.by(EventSort.EVENT_DATE.toString()));
+            pageable = PageRequest.of(from / size, size, Sort.by(EventSort.EVENT_DATE.toString()));
             return eventRepository.findAll(predicate, pageable).stream()
                     .map(EntityMapper::toEventShortDto)
                     .collect(Collectors.toList());
-        } else if (parameters.getLat() != null
-                && parameters.getLon() != null
-                && parameters.getSort() != null
-                && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
+        } else if (parameters.getLat() != null && parameters.getLon() != null
+                && parameters.getSort() != null && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
             pageable = PageRequest.of( from / size, size);
-            float lat = parameters.getLat();
-            float lon = parameters.getLon();
-            QEvent qevent = QEvent.event;
-            final NumberExpression<Float> distanceKilometer = Expressions
-                    .numberTemplate(Float.class,
-                            "distance({0}, {1}, {2}, {3})",
-                            lat, lon, qevent.location.lat, qevent.location.lon);
-            final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
-
-            List<EventShortDto> eventResult =  queryFactory.select(Projections
-                            .constructor(EventLocDto.class, qevent.id, qevent.title, qevent.annotation,
-                                    qevent.category, qevent.paid, qevent.eventDate, qevent.confirmedRequests,
-                                    qevent.initiator, distanceKilometer))
-                    .from(qevent)
-                    .offset(pageable.getOffset())
-                    .limit(pageable.getPageSize())
-                    .fetch()
-                    .stream()
-                    .map(EntityMapper::toEventShortDtoFromLoc)
-                    .sorted(Comparator.comparing(EventShortDto::getDistanceKilometer))
-                    .collect(Collectors.toList());
-
-            return getEventShortsWithViews(eventResult);
-
+            final float lat = parameters.getLat();
+            final float lon = parameters.getLon();
+            final List<EventShortDto> eventResult = eventsUtility.getEventsWithDistance(lat, lon, pageable);
+            return eventsUtility.addViewsAndSortEventShortDtoList(eventResult);
         } else {
             pageable = PageRequest.of(from / size, size);
-            eventsResult = getEventShortsWithViewsSorted(predicate, pageable);
-            return eventsResult;
+            final Page<Event> events = eventRepository.findAll(predicate, pageable);
+            if (!events.isEmpty()) {
+                return eventsUtility.getEventShortsWithViewsSorted(events);
+            } else {
+                return Collections.emptyList();
+            }
         }
+    }
+
+    @Override
+    public List<EventShortDto> getEventsNearLocation(GeoData geoData,
+                                                     Integer from,
+                                                     Integer size,
+                                                     EndpointHitDto endpointHitDto) {
+        final Pageable pageable = PageRequest.of(from / size, size);
+        final float lat = geoData.getLat();
+        final float lon = geoData.getLon();
+        final float radiusKm = geoData.getRadiusKm();
+        return eventsUtility.getNearEvents(lat, lon, radiusKm, pageable);
     }
 
     @Override
@@ -139,8 +117,8 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             throw new EventNotFoundException(eventId);
         });
         if (event.getState().equals(EventState.PUBLISHED)) {
-            EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
-            LocalDateTime startDate = eventRepository
+            final EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
+            final LocalDateTime startDate = eventRepository
                     .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll())).getCreatedOn();
             final List<ViewStats> viewStats = statClient.getStats(startDate, LocalDateTime.now(),
                     Set.of(path), false);
@@ -154,22 +132,12 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                 }
                 eventFullDto.setViews(views);
             }
-            saveHitOfViewedEvent(eventFullDto.getId(), appName, ip);
+            eventsUtility.saveHitOfViewedEvent(eventFullDto.getId(), appName, ip);
             return eventFullDto;
         } else {
             log.error("Событие с id = {} не опубликовано!", eventId);
             throw new EventStateException(String.format("Событие с id = %d не опубликовано!", eventId));
         }
-    }
-
-    private void saveHitOfViewedEvent(long eventId, String appName, String ip) {
-        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
-                .app(appName)
-                .uri("/" + EVENTS_PATH + "/" + eventId)
-                .ip(ip)
-                .timestamp(LocalDateTime.now())
-                .build();
-        statClient.save(endpointHitDto);
     }
 
     @Override
@@ -208,57 +176,5 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             throw new CategoryNotFoundException(catId);
         });
         return EntityMapper.toCategoryDto(category);
-    }
-
-    private List<EventShortDto> getEventShortsWithViews(List<EventShortDto> incomingList) {
-        Set<String> uris = incomingList.stream()
-                .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
-                .collect(Collectors.toSet());
-        final LocalDateTime startDate = eventRepository
-                .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll()))
-                .getCreatedOn();
-        final LocalDateTime endDate = LocalDateTime.now();
-        List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
-        List<EventShortDto> eventsResultWithViews = checkAndSetViews(incomingList, viewStats);
-        eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getDistanceKilometer));
-        return eventsResultWithViews;
-    }
-
-    private List<EventShortDto> getEventShortsWithViewsSorted(Predicate predicate, Pageable pageable) {
-        Page<Event> events = eventRepository.findAll(predicate, pageable);
-        Set<String> uris = events.stream()
-                .map(e -> ("/" + EVENTS_PATH + "/" + e.getId()))
-                .collect(Collectors.toSet());
-        if (!events.isEmpty()) {
-            final LocalDateTime startDate = eventRepository
-                    .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll()))
-                    .getCreatedOn();
-            final LocalDateTime endDate = LocalDateTime.now();
-            List<EventShortDto> eventsResult = events.stream()
-                    .map(EntityMapper::toEventShortDto)
-                    .collect(Collectors.toList());
-            List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
-            List<EventShortDto> eventsResultWithViews = checkAndSetViews(eventsResult, viewStats);
-            eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getViews).reversed());
-            return eventsResultWithViews;
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    private List<EventShortDto> checkAndSetViews(List<EventShortDto> eventsResult, List<ViewStats> viewStats) {
-        if (!viewStats.isEmpty()) {
-            for (EventShortDto eventShortDto : eventsResult) {
-                for (ViewStats views : viewStats) {
-                    if (views.getUri().contains(eventShortDto.getId().toString())) {
-                        eventShortDto.setViews(views.getHits());
-                    }
-                }
-                if (eventShortDto.getViews() == null) {
-                    eventShortDto.setViews(0L);
-                }
-            }
-        }
-        return eventsResult;
     }
 }

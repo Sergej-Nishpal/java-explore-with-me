@@ -9,6 +9,7 @@ import ru.practicum.ewmmain.dto.*;
 import ru.practicum.ewmmain.dto.incoming.*;
 import ru.practicum.ewmmain.model.EventState;
 import ru.practicum.ewmmain.service.admin.AdminAccessService;
+import ru.practicum.ewmmain.validation.Marker;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Positive;
@@ -164,7 +165,7 @@ public class AdminAccessController {
 
     /*@PostMapping("/locations")
     @Validated({Marker.AdminLocation.class})
-    public UserDto addLocation(@RequestBody @Valid LocationDto locationDto) {
+    public LocationFullDto addLocation(@RequestBody @Valid LocationDto locationDto) {
 
         log.debug("Добавление админом локации с описанием \"{}\".", locationDto.getDescription());
         return adminAccessService.addLocation(locationDto);
@@ -172,8 +173,8 @@ public class AdminAccessController {
 
     @PatchMapping("/locations/{locId}")
     @Validated({Marker.AdminLocation.class})
-    public CategoryDto changeLocation(@PathVariable @Positive Long locId,
-                                      @RequestBody @Valid LocationDto locationDto) {
+    public LocationFullDto changeLocation(@PathVariable @Positive Long locId,
+                                          @RequestBody @Valid LocationDto locationDto) {
 
         log.debug("Изменение админом локации с id = {}.", locId);
         return adminAccessService.changeLocation(locationDto);

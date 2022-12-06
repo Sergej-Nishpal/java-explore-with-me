@@ -5,7 +5,7 @@ import lombok.Value;
 import java.time.LocalDateTime;
 
 @Value
-
+// TODO Что оно тут делает?
 public class EndpointHit {
     Long id;
     String app;

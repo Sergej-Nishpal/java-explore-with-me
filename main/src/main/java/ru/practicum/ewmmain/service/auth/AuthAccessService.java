@@ -11,6 +11,8 @@ import java.util.List;
 public interface AuthAccessService {
     List<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size);
 
+    List<EventShortDto> getEventsNearMe(Long userId, Float radiusKm, Integer from, Integer size);
+
     EventFullDto updateEventByUserId(Long userId, UpdateEventRequest updateEventRequest);
 
     EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto);
