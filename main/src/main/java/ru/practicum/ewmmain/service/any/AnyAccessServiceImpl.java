@@ -23,7 +23,7 @@ import ru.practicum.ewmmain.repository.CategoryRepository;
 import ru.practicum.ewmmain.repository.CompilationRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
 import ru.practicum.ewmmain.service.EventsUtility;
-import ru.practicum.ewmmain.statclient.StatClient;
+import ru.practicum.ewmmain.remoteserverclient.RemoteServerClient;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,12 +36,12 @@ public class AnyAccessServiceImpl implements AnyAccessService {
     private final EventRepository eventRepository;
     private final CompilationRepository compilationRepository;
     private final CategoryRepository categoryRepository;
-    private final StatClient statClient;
+    private final RemoteServerClient remoteServerClient;
     private final EventsUtility eventsUtility;
 
     @Override
     public List<EventShortDto> getEvents(EventsRequestParameters parameters, EndpointHitDto endpointHitDto) {
-        statClient.save(endpointHitDto);
+        remoteServerClient.save(endpointHitDto);
         final QEvent event = QEvent.event;
         final Predicate textPredicate;
         if (parameters.getText() != null) {
@@ -120,7 +120,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
             final EventFullDto eventFullDto = EntityMapper.toEventFullDto(event);
             final LocalDateTime startDate = eventRepository
                     .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll())).getCreatedOn();
-            final List<ViewStats> viewStats = statClient.getStats(startDate, LocalDateTime.now(),
+            final List<ViewStats> viewStats = remoteServerClient.getStats(startDate, LocalDateTime.now(),
                     Set.of(path), false);
             long views = 0;
             if (!viewStats.isEmpty()) {

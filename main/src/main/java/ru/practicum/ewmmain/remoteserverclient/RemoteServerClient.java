@@ -1,4 +1,4 @@
-package ru.practicum.ewmmain.statclient;
+package ru.practicum.ewmmain.remoteserverclient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,13 +26,13 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StatClient {
+public class RemoteServerClient {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final WebClient webClient;
 
     @Autowired
-    public StatClient(@Value("${ewm-stat.url}") String statUrl) {
+    public RemoteServerClient(@Value("${ewm-stat.url}") String statUrl) {
         final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(statUrl);
         factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
         webClient = WebClient

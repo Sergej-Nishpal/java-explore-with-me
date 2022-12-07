@@ -15,7 +15,7 @@ import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
 import ru.practicum.ewmmain.service.EventsUtility;
-import ru.practicum.ewmmain.statclient.StatClient;
+import ru.practicum.ewmmain.remoteserverclient.RemoteServerClient;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -29,13 +29,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminAccessServiceImpl implements AdminAccessService {
     private static final int MIN_HOURS_BEFORE_EVENT_DATE = 1;
+    private static final float MIN_DISTANCE_FOR_NOTIFICATION = 3.0f;
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final CompilationRepository compilationRepository;
     private final LocationRepository locationRepository;
     private final EventsUtility eventsUtility;
-    private final StatClient statClient;
+    private final RemoteServerClient remoteServerClient;
 
     @Override
     public List<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
@@ -113,7 +114,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         event.setState(EventState.PUBLISHED);
         event.setPublishedOn(LocalDateTime.now());
         final Event publishedEvent = eventRepository.save(event);
-        statClient.mail(eventsUtility.getNotificationList(publishedEvent, 3.0f));
+        remoteServerClient.mail(eventsUtility.getNotificationList(publishedEvent, MIN_DISTANCE_FOR_NOTIFICATION));
         return EntityMapper.toEventFullDto(publishedEvent);
     }
 

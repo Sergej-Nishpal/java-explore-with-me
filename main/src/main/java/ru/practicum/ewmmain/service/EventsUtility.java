@@ -21,7 +21,7 @@ import ru.practicum.ewmmain.model.QLocation;
 import ru.practicum.ewmmain.model.QUser;
 import ru.practicum.ewmmain.repository.CategoryRepository;
 import ru.practicum.ewmmain.repository.EventRepository;
-import ru.practicum.ewmmain.statclient.StatClient;
+import ru.practicum.ewmmain.remoteserverclient.RemoteServerClient;
 
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
@@ -36,18 +36,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class EventsUtility {
     private static final String EVENTS_PATH = "events";
+    private static final String DISTANCE_FUNC_DEFINITION = "distance({0}, {1}, {2}, {3})";
 
     private final EntityManager entityManager;
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
-    private final StatClient statClient;
+    private final RemoteServerClient remoteServerClient;
 
     public List<EventShortDto> getNearEvents(float lat, float lon, float radiusKm, Pageable pageable) {
         final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         final QEvent event = QEvent.event;
         final NumberExpression<Float> distanceKilometer = Expressions
                 .numberTemplate(Float.class,
-                        "distance({0}, {1}, {2}, {3})",
+                        DISTANCE_FUNC_DEFINITION,
                         lat,
                         lon,
                         event.location.lat,
@@ -83,7 +84,7 @@ public class EventsUtility {
         final JPAQueryFactory queryFactory = new JPAQueryFactory(entityManager);
         final QEvent event = QEvent.event;
         final NumberExpression<Float> distanceKilometer = Expressions.numberTemplate(Float.class,
-                "distance({0}, {1}, {2}, {3})",
+                DISTANCE_FUNC_DEFINITION,
                 lat,
                 lon,
                 event.location.lat,
@@ -114,24 +115,25 @@ public class EventsUtility {
         final QUser user = QUser.user;
         final QLocation location = QLocation.location;
         final NumberExpression<Float> distanceKilometer = Expressions.numberTemplate(Float.class,
-                "distance({0}, {1}, {2}, {3})",
+                DISTANCE_FUNC_DEFINITION,
+                location.lat,
+                location.lon,
                 event.location.lat,
                 event.location.lon,
-                pubEvent.getLocation().getLat(),
-                pubEvent.getLocation().getLon(),
                 minimalDistance);
         final List<EventNotificationDto> eventNotificationDtoList = queryFactory
                 .select(Projections.constructor(EventNotificationDto.class,
                         user.email,
                         user.name,
                         event.title,
-                        location.description,
+                        event.location.description,
                         distanceKilometer,
                         event.location.lat,
                         event.location.lon,
                         event.eventDate))
                 .from(user)
-                .where(user.id.ne(event.initiator.id).and(user.locationId.isNotNull()))
+                .where(user.locationId.isNotNull())
+                .where(user.id.ne(pubEvent.getInitiator().getId()))
                 .join(location)
                 .on(user.locationId.eq(location.id))
                 .join(event)
@@ -139,8 +141,8 @@ public class EventsUtility {
                 .where(Expressions.booleanTemplate("distance({0}, {1}, {2}, {3}) <= {4}",
                         location.lat,
                         location.lon,
-                        pubEvent.getLocation().getLat(),
-                        pubEvent.getLocation().getLon(),
+                        event.location.lat,
+                        event.location.lon,
                         minimalDistance))
                 .fetch();
         for (EventNotificationDto eventNotificationDto : eventNotificationDtoList) {
@@ -157,7 +159,7 @@ public class EventsUtility {
                 .findFirstByCategoryInOrderByCreatedOn(new HashSet<>(categoryRepository.findAll()))
                 .getCreatedOn();
         final LocalDateTime endDate = LocalDateTime.now();
-        final List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
+        final List<ViewStats> viewStats = remoteServerClient.getStats(startDate, endDate, uris, false);
         final List<EventShortDto> eventsResultWithViews = checkAndSetViews(incomingList, viewStats);
         eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getDistanceKilometer));
         return eventsResultWithViews;
@@ -174,7 +176,7 @@ public class EventsUtility {
         final List<EventShortDto> eventsResult = events.stream()
                 .map(EntityMapper::toEventShortDto)
                 .collect(Collectors.toList());
-        final List<ViewStats> viewStats = statClient.getStats(startDate, endDate, uris, false);
+        final List<ViewStats> viewStats = remoteServerClient.getStats(startDate, endDate, uris, false);
         final List<EventShortDto> eventsResultWithViews = checkAndSetViews(eventsResult, viewStats);
         eventsResultWithViews.sort(Comparator.comparing(EventShortDto::getViews).reversed());
         return eventsResultWithViews;
@@ -204,6 +206,6 @@ public class EventsUtility {
                 .ip(ip)
                 .timestamp(LocalDateTime.now())
                 .build();
-        statClient.save(endpointHitDto);
+        remoteServerClient.save(endpointHitDto);
     }
 }

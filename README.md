@@ -8,7 +8,7 @@ ___
 ### Диаграммы баз данных
 
 - Main service:
-> ![ewm-main-db.png](dia/ewm-main-db.png)
+> ![ewm-main-db.png](diagrams/ewm-main-db.png)
 
 - Stat service:
-> ![ewm-stat-db.png](dia/ewm-stat-db.png)
+> ![ewm-stat-db.png](diagrams/ewm-stat-db.png)
