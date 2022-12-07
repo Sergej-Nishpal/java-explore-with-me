@@ -1,6 +1,7 @@
 package ru.practicum.ewmstat.service;
 
 import ru.practicum.ewmstat.model.EndpointHit;
+import ru.practicum.ewmstat.model.EventNotification;
 import ru.practicum.ewmstat.model.ViewStats;
 
 import java.time.LocalDateTime;
@@ -11,4 +12,6 @@ public interface StatService {
     void postHit(EndpointHit endpointHit);
 
     List<ViewStats> getViewStats(LocalDateTime start, LocalDateTime end, Set<String> uris, Boolean unique);
+
+    void postMails(List<EventNotification> eventNotifications);
 }

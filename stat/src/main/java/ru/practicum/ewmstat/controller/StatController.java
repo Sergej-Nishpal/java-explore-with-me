@@ -6,7 +6,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.ewmstat.dto.EndpointHitDto;
-import ru.practicum.ewmstat.dto.mapper.EndpointHitMapper;
+import ru.practicum.ewmstat.dto.mapper.StatEntityMapper;
+import ru.practicum.ewmstat.dto.EventNotificationDto;
 import ru.practicum.ewmstat.model.ViewStats;
 import ru.practicum.ewmstat.service.StatService;
 
@@ -25,7 +26,7 @@ public class StatController {
     @PostMapping("/hit")
     public void postHit(@RequestBody @Valid EndpointHitDto endpointHitDto) {
         log.debug(String.format("Сохранение информации о запросе пользователя на uri: %s", endpointHitDto.getUri()));
-        statService.postHit(EndpointHitMapper.toEndpointHit(endpointHitDto));
+        statService.postHit(StatEntityMapper.toEndpointHit(endpointHitDto));
     }
 
     @GetMapping("/stats")
@@ -37,5 +38,11 @@ public class StatController {
                                         @RequestParam(defaultValue = "false") Boolean unique) {
         log.debug("Получение статистики по посещениям.");
         return statService.getViewStats(start, end, uris, unique);
+    }
+
+    @PostMapping("/mails")
+    public void mail(@RequestBody @Valid List<EventNotificationDto> notifications) {
+        log.debug(String.format("Сохранение уведомлений для отправки пользователям, %d шт.", notifications.size()));
+        statService.postMails(StatEntityMapper.toEventNotifications(notifications));
     }
 }

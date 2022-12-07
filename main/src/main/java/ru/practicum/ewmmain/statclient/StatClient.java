@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.core.publisher.Mono;
+import ru.practicum.ewmmain.dto.EventNotificationDto;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.exception.StatClientException;
 import ru.practicum.ewmmain.dto.EndpointHitDto;
@@ -66,10 +67,24 @@ public class StatClient {
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .onStatus(HttpStatus::is5xxServerError, response -> {
-                    throw new StatClientException("Ошибка получения данных от сервера статистики!");
+                    throw new StatClientException("Ошибка получения данных статистики!");
                 })
                 .bodyToMono(new ParameterizedTypeReference<List<ViewStats>>() {
                 })
+                .block();
+    }
+
+    public void mail(List<EventNotificationDto> eventNotificationDtoList) {
+        webClient.post()
+                .uri("/mails")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(eventNotificationDtoList), new ParameterizedTypeReference<>() {
+                })
+                .retrieve()
+                .onStatus(HttpStatus::isError, response -> {
+                    throw new StatClientException("Ошибка сохранения данных рассылки!");
+                })
+                .toBodilessEntity()
                 .block();
     }
 

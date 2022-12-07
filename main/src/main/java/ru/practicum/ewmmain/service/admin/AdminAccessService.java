@@ -43,4 +43,10 @@ public interface AdminAccessService {
     void pinCompilationById(Long compId);
 
     List<LocationFullDto> getLocations(Integer from, Integer size);
+
+    LocationFullDto addLocation(LocationDto locationDto);
+
+    LocationFullDto changeLocation(Long locId, LocationDto locationDto);
+
+    void deleteLocation(Long locId);
 }

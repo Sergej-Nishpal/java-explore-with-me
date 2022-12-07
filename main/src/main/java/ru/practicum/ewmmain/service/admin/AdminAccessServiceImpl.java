@@ -14,6 +14,8 @@ import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
+import ru.practicum.ewmmain.service.EventsUtility;
+import ru.practicum.ewmmain.statclient.StatClient;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -32,6 +34,8 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     private final CategoryRepository categoryRepository;
     private final CompilationRepository compilationRepository;
     private final LocationRepository locationRepository;
+    private final EventsUtility eventsUtility;
+    private final StatClient statClient;
 
     @Override
     public List<EventFullDto> getEvents(Set<Long> users, Set<EventState> states,
@@ -95,6 +99,7 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     }
 
     @Override
+    @Transactional
     public EventFullDto publishEvent(Long eventId) {
         Event event = getEventWithCheck(eventId);
         if (!event.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
@@ -108,15 +113,12 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         event.setState(EventState.PUBLISHED);
         event.setPublishedOn(LocalDateTime.now());
         final Event publishedEvent = eventRepository.save(event);
-        checkForSendingNotifications(publishedEvent);
+        statClient.mail(eventsUtility.getNotificationList(publishedEvent, 3.0f));
         return EntityMapper.toEventFullDto(publishedEvent);
     }
 
-    private void checkForSendingNotifications(Event publishedEvent) {
-
-    }
-
     @Override
+    @Transactional
     public EventFullDto rejectEvent(Long eventId) {
         Event event = getEventWithCheck(eventId);
 
@@ -167,10 +169,6 @@ public class AdminAccessServiceImpl implements AdminAccessService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * @param newUserRequest Входящие данные нового пользователя (могут быть с координатами или без)
-     * @return UserDto
-     */
     @Override
     @Transactional
     public UserDto addUser(NewUserRequest newUserRequest) {
@@ -250,6 +248,42 @@ public class AdminAccessServiceImpl implements AdminAccessService {
         Compilation compilation = getCompilationWithCheck(compId);
         compilation.setPinned(true);
         compilationRepository.save(compilation);
+    }
+
+    @Override
+    public LocationFullDto addLocation(LocationDto locationDto) {
+        final Location location = locationRepository.save(EntityMapper.toLocation(locationDto));
+        return EntityMapper.toLocationFullDto(location);
+    }
+
+    @Override
+    public LocationFullDto changeLocation(Long locId, LocationDto locationDto) {
+        final Location savedLocation = locationRepository.findById(locId).orElseThrow(() -> {
+            log.error("Локация с id = {} не найдена!", locId);
+            throw new LocationNotFoundException(String.format("Локация с id = %d не найдена!", locId));
+        });
+            final Location locationToUpdate = Location.builder()
+                    .id(locId)
+                    .type(locationDto.getType() != savedLocation.getType()
+                            ? locationDto.getType()
+                            : savedLocation.getType())
+                    .description(!locationDto.getDescription().equals(savedLocation.getDescription())
+                            ? locationDto.getDescription()
+                            : savedLocation.getDescription())
+                    .lat(!locationDto.getLat().equals(savedLocation.getLat())
+                            ? locationDto.getLat()
+                            : savedLocation.getLat())
+                    .lon(!locationDto.getLon().equals(savedLocation.getLon())
+                            ? locationDto.getLon()
+                            : savedLocation.getLon())
+                    .createdOn(savedLocation.getCreatedOn())
+                    .build();
+        return EntityMapper.toLocationFullDto(locationRepository.save(locationToUpdate));
+    }
+
+    @Override
+    public void deleteLocation(Long locId) {
+        locationRepository.deleteById(locId);
     }
 
     @Override

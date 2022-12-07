@@ -77,18 +77,6 @@ public class AuthAccessServiceImpl implements AuthAccessService {
             throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
         }
 
-        final LocationDto locationDto = LocationDto.builder()
-                .type(newEventDto.getLocation().getType() != null
-                        ? newEventDto.getLocation().getType()
-                        : LocationType.OTHER)
-                .description(newEventDto.getLocation().getDescription() != null
-                        ? newEventDto.getLocation().getDescription()
-                        : "Some description")
-                .lat(newEventDto.getLocation().getLat())
-                .lon(newEventDto.getLocation().getLon())
-                .build();
-
-        final Location location = locationRepository.save(EntityMapper.toLocation(locationDto));
         final Category category = categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
             log.error("Категория с id = {} не найдена!", newEventDto.getCategory());
             throw new CategoryNotFoundException(newEventDto.getCategory());
@@ -99,7 +87,29 @@ public class AuthAccessServiceImpl implements AuthAccessService {
             throw new UserNotFoundException(userId);
         });
 
-        final Event event = EntityMapper.toEvent(newEventDto, category, location, initiator);
+        final LocationDto locationDto = LocationDto.builder()
+                .type(newEventDto.getLocation().getType() != null
+                        ? newEventDto.getLocation().getType()
+                        : LocationType.OTHER)
+                .description(newEventDto.getLocation().getDescription() != null
+                        ? newEventDto.getLocation().getDescription()
+                        : "Some description")
+                .lat(newEventDto.getLocation().getLat())
+                .lon(newEventDto.getLocation().getLon())
+                .build();
+        final Location locationToSave;
+        final Location locationWithSameDescription = locationRepository.findByDescription(locationDto.getDescription());
+        if (locationWithSameDescription == null
+                || (!locationWithSameDescription.getDescription().equals(locationDto.getDescription())
+                && locationWithSameDescription.getLat() != locationDto.getLat()
+                && locationWithSameDescription.getLon() != locationDto.getLon())) {
+            log.debug("Добавление новой локации с описанием \"{}\".", locationDto.getDescription());
+            locationToSave = locationRepository.save(EntityMapper.toLocation(locationDto));
+        } else {
+            locationToSave = locationWithSameDescription;
+        }
+
+        final Event event = EntityMapper.toEvent(newEventDto, category, locationToSave, initiator);
         return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 

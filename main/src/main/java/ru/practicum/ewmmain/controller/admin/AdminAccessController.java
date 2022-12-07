@@ -163,7 +163,7 @@ public class AdminAccessController {
         return adminAccessService.getLocations(from, size);
     }
 
-    /*@PostMapping("/locations")
+    @PostMapping("/locations")
     @Validated({Marker.AdminLocation.class})
     public LocationFullDto addLocation(@RequestBody @Valid LocationDto locationDto) {
 
@@ -177,7 +177,7 @@ public class AdminAccessController {
                                           @RequestBody @Valid LocationDto locationDto) {
 
         log.debug("Изменение админом локации с id = {}.", locId);
-        return adminAccessService.changeLocation(locationDto);
+        return adminAccessService.changeLocation(locId, locationDto);
     }
 
     @DeleteMapping("/locations/{locId}")
@@ -185,5 +185,5 @@ public class AdminAccessController {
 
         log.debug("Удаление админом локации с id = {}.", locId);
         adminAccessService.deleteLocation(locId);
-    }*/
+    }
 }
