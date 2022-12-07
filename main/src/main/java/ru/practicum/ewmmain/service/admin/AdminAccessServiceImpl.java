@@ -283,8 +283,16 @@ public class AdminAccessServiceImpl implements AdminAccessService {
     }
 
     @Override
+    @Transactional
     public void deleteLocation(Long locId) {
-        locationRepository.deleteById(locId);
+        final List<Event> publishedEvents = eventRepository.findByLocationIdAndState(locId, EventState.PUBLISHED);
+        if (!publishedEvents.isEmpty()) {
+            throw new EventStateException(String.format("С локацией с id = %d связаны опубликованные события!", locId));
+        } else {
+            final List<Event> eventsToDelete = eventRepository.findByLocationId(locId);
+            eventRepository.deleteAll(eventsToDelete);
+            locationRepository.deleteById(locId);
+        }
     }
 
     @Override

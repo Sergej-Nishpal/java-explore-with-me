@@ -4,5 +4,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import ru.practicum.ewmmain.model.Location;
 
 public interface LocationRepository extends JpaRepository<Location, Long> {
-    Location findByDescription(String description);
+    Location findByLatAndLon(float lan, float lon);
 }

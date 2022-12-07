@@ -98,15 +98,17 @@ public class AuthAccessServiceImpl implements AuthAccessService {
                 .lon(newEventDto.getLocation().getLon())
                 .build();
         final Location locationToSave;
-        final Location locationWithSameDescription = locationRepository.findByDescription(locationDto.getDescription());
-        if (locationWithSameDescription == null
-                || (!locationWithSameDescription.getDescription().equals(locationDto.getDescription())
-                && locationWithSameDescription.getLat() != locationDto.getLat()
-                && locationWithSameDescription.getLon() != locationDto.getLon())) {
+        final Location locationWithSameLatLon = locationRepository
+                .findByLatAndLon(newEventDto.getLocation().getLat(), newEventDto.getLocation().getLon());
+        if (locationWithSameLatLon == null
+                || (!locationWithSameLatLon.getType().equals(locationDto.getType())
+                && !locationWithSameLatLon.getDescription().equals(locationDto.getDescription())
+                && locationWithSameLatLon.getLat() != locationDto.getLat()
+                && locationWithSameLatLon.getLon() != locationDto.getLon())) {
             log.debug("Добавление новой локации с описанием \"{}\".", locationDto.getDescription());
             locationToSave = locationRepository.save(EntityMapper.toLocation(locationDto));
         } else {
-            locationToSave = locationWithSameDescription;
+            locationToSave = locationWithSameLatLon;
         }
 
         final Event event = EntityMapper.toEvent(newEventDto, category, locationToSave, initiator);

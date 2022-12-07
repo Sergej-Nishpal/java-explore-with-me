@@ -82,7 +82,7 @@ public class AnyAccessServiceImpl implements AnyAccessService {
                     .collect(Collectors.toList());
         } else if (parameters.getLat() != null && parameters.getLon() != null
                 && parameters.getSort() != null && parameters.getSort().equals(EventSort.DISTANCE_KM)) {
-            pageable = PageRequest.of( from / size, size);
+            pageable = PageRequest.of(from / size, size);
             final float lat = parameters.getLat();
             final float lon = parameters.getLon();
             final List<EventShortDto> eventResult = eventsUtility.getEventsWithDistance(lat, lon, pageable);
