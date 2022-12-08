@@ -44,6 +44,8 @@ public interface AdminAccessService {
 
     List<LocationFullDto> getLocations(Integer from, Integer size);
 
+    LocationFullDto getLocationById(Long locId);
+
     LocationFullDto addLocation(LocationDto locationDto);
 
     LocationFullDto changeLocation(Long locId, LocationDto locationDto);

@@ -163,6 +163,13 @@ public class AdminAccessController {
         return adminAccessService.getLocations(from, size);
     }
 
+    @GetMapping("/locations/{locId}")
+    public LocationFullDto getLocationById(@PathVariable @Positive Long locId) {
+
+        log.debug("Запрос админом локации с id = {}.", locId);
+        return adminAccessService.getLocationById(locId);
+    }
+
     @PostMapping("/locations")
     @Validated({Marker.AdminLocation.class})
     public LocationFullDto addLocation(@RequestBody @Valid LocationDto locationDto) {

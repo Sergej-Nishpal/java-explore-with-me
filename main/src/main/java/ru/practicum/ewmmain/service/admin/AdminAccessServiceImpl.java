@@ -263,22 +263,22 @@ public class AdminAccessServiceImpl implements AdminAccessService {
             log.error("Локация с id = {} не найдена!", locId);
             throw new LocationNotFoundException(String.format("Локация с id = %d не найдена!", locId));
         });
-            final Location locationToUpdate = Location.builder()
-                    .id(locId)
-                    .type(locationDto.getType() != savedLocation.getType()
-                            ? locationDto.getType()
-                            : savedLocation.getType())
-                    .description(!locationDto.getDescription().equals(savedLocation.getDescription())
-                            ? locationDto.getDescription()
-                            : savedLocation.getDescription())
-                    .lat(!locationDto.getLat().equals(savedLocation.getLat())
-                            ? locationDto.getLat()
-                            : savedLocation.getLat())
-                    .lon(!locationDto.getLon().equals(savedLocation.getLon())
-                            ? locationDto.getLon()
-                            : savedLocation.getLon())
-                    .createdOn(savedLocation.getCreatedOn())
-                    .build();
+        final Location locationToUpdate = Location.builder()
+                .id(locId)
+                .type(locationDto.getType() != savedLocation.getType()
+                        ? locationDto.getType()
+                        : savedLocation.getType())
+                .description(!locationDto.getDescription().equals(savedLocation.getDescription())
+                        ? locationDto.getDescription()
+                        : savedLocation.getDescription())
+                .lat(!locationDto.getLat().equals(savedLocation.getLat())
+                        ? locationDto.getLat()
+                        : savedLocation.getLat())
+                .lon(!locationDto.getLon().equals(savedLocation.getLon())
+                        ? locationDto.getLon()
+                        : savedLocation.getLon())
+                .createdOn(savedLocation.getCreatedOn())
+                .build();
         return EntityMapper.toLocationFullDto(locationRepository.save(locationToUpdate));
     }
 
@@ -302,6 +302,14 @@ public class AdminAccessServiceImpl implements AdminAccessService {
                 .stream()
                 .map(EntityMapper::toLocationFullDto)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public LocationFullDto getLocationById(Long locId) {
+        final Location location = locationRepository.findById(locId).orElseThrow(() -> {
+            throw new LocationNotFoundException(String.format("Локация с id = %d не найдена!", locId));
+        });
+        return EntityMapper.toLocationFullDto(location);
     }
 
     private Category getCategoryWithCheck(long categoryId) {
