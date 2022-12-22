@@ -18,13 +18,28 @@ public class EntityMapper {
     public static EventShortDto toEventShortDto(Event event) {
         return EventShortDto.builder()
                 .id(event.getId())
+                .title(event.getTitle())
                 .annotation(event.getAnnotation())
                 .category(toCategoryDto(event.getCategory()))
-                .confirmedRequests(event.getConfirmedRequests())
-                .eventDate(event.getEventDate())
-                .initiator(toUserShortDto(event.getInitiator()))
                 .paid(event.getPaid())
-                .title(event.getTitle())
+                .eventDate(event.getEventDate())
+                .confirmedRequests(event.getConfirmedRequests())
+                .initiator(toUserShortDto(event.getInitiator()))
+                .views(0L)
+                .build();
+    }
+
+    public static EventShortDto toEventShortDtoFromLoc(EventLocDto eventLocDto) {
+        return EventShortDto.builder()
+                .id(eventLocDto.getId())
+                .title(eventLocDto.getTitle())
+                .annotation(eventLocDto.getAnnotation())
+                .category(EntityMapper.toCategoryDto(eventLocDto.getCategory()))
+                .paid(eventLocDto.getPaid())
+                .eventDate(eventLocDto.getEventDate())
+                .confirmedRequests(eventLocDto.getConfirmedRequests())
+                .initiator(EntityMapper.toUserShortDto(eventLocDto.getInitiator()))
+                .distanceKilometer(eventLocDto.getDistanceKm())
                 .build();
     }
 
@@ -45,6 +60,7 @@ public class EntityMapper {
                 .state(event.getState())
                 .publishedOn(event.getPublishedOn())
                 .confirmedRequests(event.getConfirmedRequests())
+                .views(0L)
                 .build();
     }
 
@@ -86,10 +102,11 @@ public class EntityMapper {
                 .build();
     }
 
-    public static User toUser(NewUserRequest newUserRequest) {
+    public static User toUser(NewUserRequest newUserRequest, Location location) {
         return User.builder()
                 .name(newUserRequest.getName())
                 .email(newUserRequest.getEmail())
+                .locationId(location != null ? location.getId() : null)
                 .build();
     }
 
@@ -98,6 +115,7 @@ public class EntityMapper {
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
+                .locationId(user.getLocationId())
                 .build();
     }
 
@@ -122,8 +140,22 @@ public class EntityMapper {
 
     public static Location toLocation(LocationDto locationDto) {
         return Location.builder()
+                .type(locationDto.getType())
+                .description(locationDto.getDescription())
                 .lat(locationDto.getLat())
                 .lon(locationDto.getLon())
+                .createdOn(LocalDateTime.now())
+                .build();
+    }
+
+    public static LocationFullDto toLocationFullDto(Location location) {
+        return LocationFullDto.builder()
+                .id(location.getId())
+                .type(location.getType())
+                .description(location.getDescription())
+                .lat(location.getLat())
+                .lon(location.getLon())
+                .createdOn(location.getCreatedOn())
                 .build();
     }
 

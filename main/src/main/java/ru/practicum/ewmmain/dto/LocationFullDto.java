@@ -1,26 +1,23 @@
 package ru.practicum.ewmmain.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.*;
+import lombok.Builder;
+import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
+import ru.practicum.ewmmain.model.LocationType;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Value
 @Builder
 @Jacksonized
-public class EventShortDto {
+public class LocationFullDto {
     Long id;
-    String title;
-    String annotation;
-    CategoryDto category;
-    Boolean paid;
+    LocationType type;
+    String description;
+    Float lat;
+    Float lon;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    LocalDateTime eventDate;
-    Integer confirmedRequests;
-    UserShortDto initiator;
-    Long views;
-    Float distanceKilometer;
+    LocalDateTime createdOn;
 }

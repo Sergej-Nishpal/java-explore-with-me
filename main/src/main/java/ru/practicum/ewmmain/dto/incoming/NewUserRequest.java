@@ -12,10 +12,14 @@ import javax.validation.constraints.NotBlank;
 @Jacksonized
 public class NewUserRequest {
 
+    @NotBlank
+    String name;
+
     @Email
     @NotBlank
     String email;
 
-    @NotBlank
-    String name;
+    Float lat;
+
+    Float lon;
 }

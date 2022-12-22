@@ -1,4 +1,4 @@
-package ru.practicum.ewmmain.statclient;
+package ru.practicum.ewmmain.remoteserverclient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
 import reactor.core.publisher.Mono;
+import ru.practicum.ewmmain.dto.EventNotificationDto;
 import ru.practicum.ewmmain.dto.incoming.ViewStats;
 import ru.practicum.ewmmain.exception.StatClientException;
 import ru.practicum.ewmmain.dto.EndpointHitDto;
@@ -25,13 +26,13 @@ import java.util.Set;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StatClient {
+public class RemoteServerClient {
     private static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
     private final WebClient webClient;
 
     @Autowired
-    public StatClient(@Value("${ewm-stat.url}") String statUrl) {
+    public RemoteServerClient(@Value("${ewm-stat.url}") String statUrl) {
         final DefaultUriBuilderFactory factory = new DefaultUriBuilderFactory(statUrl);
         factory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
         webClient = WebClient
@@ -65,11 +66,25 @@ public class StatClient {
                         .build())
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .onStatus(HttpStatus::isError, response -> {
-                    throw new StatClientException("Ошибка получения данных от сервера статистики!");
+                .onStatus(HttpStatus::is5xxServerError, response -> {
+                    throw new StatClientException("Ошибка получения данных статистики!");
                 })
                 .bodyToMono(new ParameterizedTypeReference<List<ViewStats>>() {
                 })
+                .block();
+    }
+
+    public void mail(List<EventNotificationDto> eventNotificationDtoList) {
+        webClient.post()
+                .uri("/mails")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(eventNotificationDtoList), new ParameterizedTypeReference<>() {
+                })
+                .retrieve()
+                .onStatus(HttpStatus::isError, response -> {
+                    throw new StatClientException("Ошибка сохранения данных рассылки!");
+                })
+                .toBodilessEntity()
                 .block();
     }
 

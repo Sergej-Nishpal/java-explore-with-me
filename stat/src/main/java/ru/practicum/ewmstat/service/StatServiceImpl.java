@@ -10,8 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewmstat.model.EndpointHit;
+import ru.practicum.ewmstat.model.EventNotification;
 import ru.practicum.ewmstat.model.QEndpointHit;
 import ru.practicum.ewmstat.model.ViewStats;
+import ru.practicum.ewmstat.repository.MailRepository;
 import ru.practicum.ewmstat.repository.StatRepository;
 
 import javax.persistence.EntityManager;
@@ -23,6 +25,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class StatServiceImpl implements StatService {
     private final StatRepository statRepository;
+    private final MailRepository mailRepository;
     private final EntityManager entityManager;
 
     @Override
@@ -48,5 +51,10 @@ public class StatServiceImpl implements StatService {
                 .groupBy(endpointHit.app)
                 .groupBy(endpointHit.uri)
                 .fetch();
+    }
+
+    @Override
+    public void postMails(List<EventNotification> eventNotifications) {
+        mailRepository.saveAll(eventNotifications);
     }
 }

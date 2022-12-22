@@ -16,6 +16,7 @@ import ru.practicum.ewmmain.dto.mapper.EntityMapper;
 import ru.practicum.ewmmain.exception.*;
 import ru.practicum.ewmmain.model.*;
 import ru.practicum.ewmmain.repository.*;
+import ru.practicum.ewmmain.service.EventsUtility;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     private final EventRepository eventRepository;
     private final RequestRepository requestRepository;
     private final LocationRepository locationRepository;
+    private final EventsUtility eventsUtility;
 
     @Override
     public List<EventShortDto> getEventsCreatedByUserId(Long userId, Integer from, Integer size) {
@@ -45,6 +47,75 @@ public class AuthAccessServiceImpl implements AuthAccessService {
     }
 
     @Override
+    public List<EventShortDto> getEventsNearMe(Long userId, Float radiusKm, Integer from, Integer size) {
+        final User user = userRepository.findById(userId).orElseThrow(() -> {
+            throw new UserNotFoundException(userId);
+        });
+        final Location userLocation;
+        if (user.getLocationId() != null) {
+            userLocation = locationRepository.findById(user.getLocationId()).orElseThrow(() -> {
+                throw new LocationNotFoundException(String.format("Локация с id = %d не найдена!",
+                        user.getLocationId()));
+            });
+        } else {
+            throw new LocationNotFoundException(String.format("Пользователь с id = %d " +
+                    "не указал свою локацию при регистрации!", userId));
+        }
+
+        final float lat = userLocation.getLat();
+        final float lon = userLocation.getLon();
+        final Pageable pageable = PageRequest.of(from / size, size);
+        final List<EventShortDto> eventsResult = eventsUtility.getNearEvents(lat, lon, radiusKm, pageable);
+        return eventsUtility.addViewsAndSortEventShortDtoList(eventsResult);
+    }
+
+    @Override
+    @Transactional
+    public EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto) {
+        if (!newEventDto.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
+            log.error("Некорректная дата для добавления события!");
+            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
+        }
+
+        final Category category = categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
+            log.error("Категория с id = {} не найдена!", newEventDto.getCategory());
+            throw new CategoryNotFoundException(newEventDto.getCategory());
+        });
+
+        final User initiator = userRepository.findById(userId).orElseThrow(() -> {
+            log.error("Пользователь с id = {} не найден!", userId);
+            throw new UserNotFoundException(userId);
+        });
+
+        final LocationDto locationDto = LocationDto.builder()
+                .type(newEventDto.getLocation().getType() != null
+                        ? newEventDto.getLocation().getType()
+                        : LocationType.OTHER)
+                .description(newEventDto.getLocation().getDescription() != null
+                        ? newEventDto.getLocation().getDescription()
+                        : "Some description")
+                .lat(newEventDto.getLocation().getLat())
+                .lon(newEventDto.getLocation().getLon())
+                .build();
+        final Location locationToSave;
+        final Location locationWithSameLatLon = locationRepository
+                .findByLatAndLon(newEventDto.getLocation().getLat(), newEventDto.getLocation().getLon());
+        if (locationWithSameLatLon == null
+                || (!locationWithSameLatLon.getType().equals(locationDto.getType())
+                && !locationWithSameLatLon.getDescription().equals(locationDto.getDescription())
+                && locationWithSameLatLon.getLat() != locationDto.getLat()
+                && locationWithSameLatLon.getLon() != locationDto.getLon())) {
+            log.debug("Добавление новой локации с описанием \"{}\".", locationDto.getDescription());
+            locationToSave = locationRepository.save(EntityMapper.toLocation(locationDto));
+        } else {
+            locationToSave = locationWithSameLatLon;
+        }
+
+        final Event event = EntityMapper.toEvent(newEventDto, category, locationToSave, initiator);
+        return EntityMapper.toEventFullDto(eventRepository.save(event));
+    }
+
+    @Override
     @Transactional
     public EventFullDto updateEventByUserId(Long userId, UpdateEventRequest request) {
         if (!request.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
@@ -53,9 +124,7 @@ public class AuthAccessServiceImpl implements AuthAccessService {
         }
 
         final Event savedEvent = eventRepository.findAllByIdAndInitiatorId(request.getEventId(), userId);
-
         final Event eventToUpdate;
-
         if (savedEvent != null) {
             if (savedEvent.getState().equals(EventState.PUBLISHED)) {
                 log.error("Попытка изменить опубликованное событие!");
@@ -74,34 +143,6 @@ public class AuthAccessServiceImpl implements AuthAccessService {
         }
 
         return EntityMapper.toEventFullDto(eventRepository.save(eventToUpdate));
-    }
-
-    @Override
-    @Transactional
-    public EventFullDto addEventByUserId(Long userId, NewEventDto newEventDto) {
-        if (!newEventDto.getEventDate().minusHours(MIN_HOURS_BEFORE_EVENT_DATE).isAfter(LocalDateTime.now())) {
-            log.error("Некорректная дата для добавления события!");
-            throw new IncorrectEventDateException(MIN_HOURS_BEFORE_EVENT_DATE);
-        }
-
-        final LocationDto locationDto = LocationDto.builder()
-                .lat(newEventDto.getLocation().getLat())
-                .lon(newEventDto.getLocation().getLon())
-                .build();
-
-        final Location location = locationRepository.save(EntityMapper.toLocation(locationDto));
-        final Category category = categoryRepository.findById(newEventDto.getCategory()).orElseThrow(() -> {
-            log.error("Категория с id = {} не найдена!", newEventDto.getCategory());
-            throw new CategoryNotFoundException(newEventDto.getCategory());
-        });
-
-        final User initiator = userRepository.findById(userId).orElseThrow(() -> {
-            log.error("Пользователь с id = {} не найден!", userId);
-            throw new UserNotFoundException(userId);
-        });
-
-        final Event event = EntityMapper.toEvent(newEventDto, category, location, initiator);
-        return EntityMapper.toEventFullDto(eventRepository.save(event));
     }
 
     @Override

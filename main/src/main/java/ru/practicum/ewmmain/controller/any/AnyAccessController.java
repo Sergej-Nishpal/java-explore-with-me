@@ -8,10 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.EventShortDto;
+import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.GeoData;
 import ru.practicum.ewmmain.service.any.AnyAccessService;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,8 +38,11 @@ public class AnyAccessController {
                                          @RequestParam(required = false)
                                          @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
                                          LocalDateTime rangeEnd,
-                                         @RequestParam(required = false, defaultValue = "false") Boolean onlyAvailable,
-                                         @RequestParam(required = false) String sort,
+                                         @RequestParam(required = false, defaultValue = "false")
+                                         Boolean onlyAvailable,
+                                         @RequestParam(required = false) Float lat,
+                                         @RequestParam(required = false) Float lon,
+                                         @RequestParam(required = false) EventSort sort,
                                          @RequestParam(required = false, defaultValue = "0")
                                          @PositiveOrZero Integer from,
                                          @RequestParam(required = false, defaultValue = "10")
@@ -60,12 +61,52 @@ public class AnyAccessController {
                 .rangeStart(rangeStart)
                 .rangeEnd(rangeEnd)
                 .onlyAvailable(onlyAvailable)
+                .lat(lat)
+                .lon(lon)
                 .sort(sort)
                 .from(from)
                 .size(size)
                 .build();
 
-        return anyAccessService.getEvents(requestParameters, ip, path, APP);
+        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
+                .app(APP)
+                .uri(path)
+                .ip(ip)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return anyAccessService.getEvents(requestParameters, endpointHitDto);
+    }
+
+    @GetMapping("/events/near")
+    public List<EventShortDto> getEventsNearLocation(@RequestParam(required = false) Float lat,
+                                                     @RequestParam(required = false) Float lon,
+                                                     @RequestParam(name = "radius") Float radiusKm,
+                                                     @RequestParam(required = false, defaultValue = "0")
+                                                     @PositiveOrZero Integer from,
+                                                     @RequestParam(required = false, defaultValue = "10")
+                                                     @Positive Integer size,
+                                                     HttpServletRequest request) {
+
+        final String ip = request.getRemoteAddr();
+        final String path = request.getRequestURI();
+
+        log.debug("Запрос информации о событиях в радиусе {} км.", radiusKm);
+
+        final GeoData geoData = GeoData.builder()
+                .lat(lat)
+                .lon(lon)
+                .radiusKm(radiusKm)
+                .build();
+
+        final EndpointHitDto endpointHitDto = EndpointHitDto.builder()
+                .app(APP)
+                .uri(path)
+                .ip(ip)
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return anyAccessService.getEventsNearLocation(geoData, from, size, endpointHitDto);
     }
 
     @GetMapping("/events/{eventId}")

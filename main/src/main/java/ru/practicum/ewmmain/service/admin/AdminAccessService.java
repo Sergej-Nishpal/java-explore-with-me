@@ -1,13 +1,7 @@
 package ru.practicum.ewmmain.service.admin;
 
-import ru.practicum.ewmmain.dto.CategoryDto;
-import ru.practicum.ewmmain.dto.CompilationDto;
-import ru.practicum.ewmmain.dto.EventFullDto;
-import ru.practicum.ewmmain.dto.UserDto;
-import ru.practicum.ewmmain.dto.incoming.AdminUpdateEventRequest;
-import ru.practicum.ewmmain.dto.incoming.NewCategoryDto;
-import ru.practicum.ewmmain.dto.incoming.NewCompilationDto;
-import ru.practicum.ewmmain.dto.incoming.NewUserRequest;
+import ru.practicum.ewmmain.dto.*;
+import ru.practicum.ewmmain.dto.incoming.*;
 import ru.practicum.ewmmain.model.EventState;
 
 import java.time.LocalDateTime;
@@ -47,4 +41,14 @@ public interface AdminAccessService {
     void unpinCompilationById(Long compId);
 
     void pinCompilationById(Long compId);
+
+    List<LocationFullDto> getLocations(Integer from, Integer size);
+
+    LocationFullDto getLocationById(Long locId);
+
+    LocationFullDto addLocation(LocationDto locationDto);
+
+    LocationFullDto changeLocation(Long locId, LocationDto locationDto);
+
+    void deleteLocation(Long locId);
 }

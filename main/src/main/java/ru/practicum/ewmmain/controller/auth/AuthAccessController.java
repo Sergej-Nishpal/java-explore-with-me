@@ -26,12 +26,23 @@ public class AuthAccessController {
 
     @GetMapping("/{userId}/events")
     public List<EventShortDto> getEventsCreatedByUserId(@PathVariable @Positive Long userId,
-                                                        @RequestParam(defaultValue = "0")
+                                                        @RequestParam(required = false, defaultValue = "0")
                                                         @PositiveOrZero Integer from,
-                                                        @RequestParam(defaultValue = "10")
+                                                        @RequestParam(required = false, defaultValue = "10")
                                                         @Positive Integer size) {
         log.debug("Получение событий, добавленных текущим пользователем с id = {}.", userId);
         return authAccessService.getEventsCreatedByUserId(userId, from, size);
+    }
+
+    @GetMapping("/{userId}/events/near")
+    public List<EventShortDto> getEventsNearMe(@PathVariable @Positive Long userId,
+                                               @RequestParam(name = "radius") Float radiusKm,
+                                               @RequestParam(required = false, defaultValue = "0")
+                                               @PositiveOrZero Integer from,
+                                               @RequestParam(required = false, defaultValue = "10")
+                                               @Positive Integer size) {
+        log.debug("Получение событий рядом с пользователем с id = {}, радиус в км. = {}.", userId, radiusKm);
+        return authAccessService.getEventsNearMe(userId, radiusKm, from, size);
     }
 
     @PatchMapping("/{userId}/events")
